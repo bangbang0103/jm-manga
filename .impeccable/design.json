@@ -1,0 +1,519 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-20T18:42:26Z",
+  "title": "Design System: JM Manga",
+  "extensions": {
+    "colorMeta": {
+      "primary-orange": {
+        "role": "primary",
+        "displayName": "Warm Orange",
+        "canonical": "#F5922F",
+        "tonalRamp": [
+          "#2A1200",
+          "#5C2E00",
+          "#8B4500",
+          "#C25E00",
+          "#F5922F",
+          "#FFB85C",
+          "#FFD8A8",
+          "#FFF1DE"
+        ]
+      },
+      "primary-orange-light": {
+        "role": "primary-light",
+        "displayName": "Light Orange",
+        "canonical": "#FFB85C",
+        "tonalRamp": [
+          "#2A1200",
+          "#5C2E00",
+          "#8B4500",
+          "#C25E00",
+          "#F5922F",
+          "#FFB85C",
+          "#FFD8A8",
+          "#FFF1DE"
+        ]
+      },
+      "primary-orange-dark": {
+        "role": "primary-dark",
+        "displayName": "Dark Orange",
+        "canonical": "#C25E00",
+        "tonalRamp": [
+          "#2A1200",
+          "#5C2E00",
+          "#8B4500",
+          "#C25E00",
+          "#F5922F",
+          "#FFB85C",
+          "#FFD8A8",
+          "#FFF1DE"
+        ]
+      },
+      "on-primary-brown": {
+        "role": "on-primary",
+        "displayName": "On Primary Brown",
+        "canonical": "#3E1E00",
+        "tonalRamp": [
+          "#1A120B",
+          "#3E1E00",
+          "#5A3E2E",
+          "#8A7260",
+          "#C9A88F",
+          "#E6CBB0",
+          "#F5E0C8",
+          "#FFF8ED"
+        ]
+      },
+      "secondary-coral": {
+        "role": "secondary",
+        "displayName": "Coral",
+        "canonical": "#E66A55",
+        "tonalRamp": [
+          "#2B0A05",
+          "#5A1A10",
+          "#8B3D2A",
+          "#E66A55",
+          "#FF9E8C",
+          "#FFD4CC",
+          "#FFEAE6",
+          "#FFF5F3"
+        ]
+      },
+      "tertiary-gold": {
+        "role": "tertiary",
+        "displayName": "Gold",
+        "canonical": "#FFD166",
+        "tonalRamp": [
+          "#3D2E00",
+          "#5A4500",
+          "#8B6A00",
+          "#FFD166",
+          "#FFE08A",
+          "#FFE8B0",
+          "#FFF2D1",
+          "#FFF9E8"
+        ]
+      },
+      "cream": {
+        "role": "neutral-background",
+        "displayName": "Cream",
+        "canonical": "#FFF8ED",
+        "tonalRamp": [
+          "#1A1512",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E0C8",
+          "#FFF8ED"
+        ]
+      },
+      "cream-dark": {
+        "role": "neutral-background-dark",
+        "displayName": "Cream Dark",
+        "canonical": "#1A1512",
+        "tonalRamp": [
+          "#1A1512",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E0C8",
+          "#FFF8ED"
+        ]
+      },
+      "surface-container-low": {
+        "role": "surface",
+        "displayName": "Surface Container Low",
+        "canonical": "#FFF1DE",
+        "tonalRamp": [
+          "#1A1512",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E0C8",
+          "#FFF1DE"
+        ]
+      },
+      "surface-container": {
+        "role": "surface",
+        "displayName": "Surface Container",
+        "canonical": "#FFE8D1",
+        "tonalRamp": [
+          "#1A1512",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E0C8",
+          "#FFE8D1"
+        ]
+      },
+      "surface-container-high": {
+        "role": "surface",
+        "displayName": "Surface Container High",
+        "canonical": "#FFE0BF",
+        "tonalRamp": [
+          "#1A1512",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E0C8",
+          "#FFE0BF"
+        ]
+      },
+      "surface-variant": {
+        "role": "surface",
+        "displayName": "Surface Variant",
+        "canonical": "#F5E0C8",
+        "tonalRamp": [
+          "#1A1512",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E0C8",
+          "#FFF1DE"
+        ]
+      },
+      "ink": {
+        "role": "text",
+        "displayName": "Ink",
+        "canonical": "#1A120B",
+        "tonalRamp": [
+          "#1A120B",
+          "#3E1E00",
+          "#5A3E2E",
+          "#8A7260",
+          "#9A7A60",
+          "#C9A88F",
+          "#F5E0C8",
+          "#FFF8ED"
+        ]
+      },
+      "ink-light": {
+        "role": "text-secondary",
+        "displayName": "Ink Light",
+        "canonical": "#5A3E2E",
+        "tonalRamp": [
+          "#1A120B",
+          "#3E1E00",
+          "#5A3E2E",
+          "#8A7260",
+          "#9A7A60",
+          "#C9A88F",
+          "#F5E0C8",
+          "#FFF8ED"
+        ]
+      },
+      "outline": {
+        "role": "border",
+        "displayName": "Outline",
+        "canonical": "#9A7A60",
+        "tonalRamp": [
+          "#1A120B",
+          "#3E1E00",
+          "#5A3E2E",
+          "#8A7260",
+          "#9A7A60",
+          "#C9A88F",
+          "#F5E0C8",
+          "#FFF8ED"
+        ]
+      },
+      "surface-container-low-dark": {
+        "role": "surface-dark",
+        "displayName": "Surface Container Low Dark",
+        "canonical": "#221C18",
+        "tonalRamp": [
+          "#1A1512",
+          "#221C18",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E0C8"
+        ]
+      },
+      "surface-container-dark": {
+        "role": "surface-dark",
+        "displayName": "Surface Container Dark",
+        "canonical": "#2C241F",
+        "tonalRamp": [
+          "#1A1512",
+          "#221C18",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E0C8"
+        ]
+      },
+      "surface-container-high-dark": {
+        "role": "surface-dark",
+        "displayName": "Surface Container High Dark",
+        "canonical": "#3A2F28",
+        "tonalRamp": [
+          "#1A1512",
+          "#221C18",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E0C8"
+        ]
+      },
+      "surface-variant-dark": {
+        "role": "surface-dark",
+        "displayName": "Surface Variant Dark",
+        "canonical": "#4A3D35",
+        "tonalRamp": [
+          "#1A1512",
+          "#221C18",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E0C8"
+        ]
+      },
+      "ink-dark": {
+        "role": "text-dark",
+        "displayName": "Ink Dark",
+        "canonical": "#F5E6D3",
+        "tonalRamp": [
+          "#1A1512",
+          "#221C18",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E6D3"
+        ]
+      },
+      "ink-light-dark": {
+        "role": "text-secondary-dark",
+        "displayName": "Ink Light Dark",
+        "canonical": "#C9A88F",
+        "tonalRamp": [
+          "#1A1512",
+          "#221C18",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E6D3"
+        ]
+      },
+      "outline-dark": {
+        "role": "border-dark",
+        "displayName": "Outline Dark",
+        "canonical": "#8A7260",
+        "tonalRamp": [
+          "#1A1512",
+          "#221C18",
+          "#2C241F",
+          "#3A2F28",
+          "#4A3D35",
+          "#8A7260",
+          "#C9A88F",
+          "#F5E6D3"
+        ]
+      },
+      "tertiary-gold-dark": {
+        "role": "tertiary-dark",
+        "displayName": "Gold Dark",
+        "canonical": "#B8962E",
+        "tonalRamp": [
+          "#3D2E00",
+          "#5A4500",
+          "#8B6A00",
+          "#B8962E",
+          "#FFD166",
+          "#FFE08A",
+          "#FFE8B0",
+          "#FFF2D1"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headlines only, such as empty-state titles."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page-level headings like server selection title."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles, list items, and section headers."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Descriptions, status text, and readable prose; keep ≤65ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Badges, buttons, and small metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "toast-float",
+        "value": "0 6px 16px rgba(0,0,0,0.12)",
+        "purpose": "Only for the top Toast to lift it above page content."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default easing for state transitions."
+      },
+      {
+        "name": "ease-back",
+        "value": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "purpose": "Toast entrance slide."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "360px"
+      },
+      {
+        "name": "md",
+        "value": "600px"
+      },
+      {
+        "name": "lg",
+        "value": "840px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action button with warm orange background.",
+      "html": "<button class=\"ds-btn-primary\">Connect</button>",
+      "css": ".ds-btn-primary { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: #F5922F; color: #3E1E00; padding: 16px 24px; border: none; border-radius: 16px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: #FFB85C; }"
+    },
+    {
+      "name": "Outlined Button",
+      "kind": "button",
+      "refersTo": "button-outlined",
+      "description": "Secondary action button on a tinted surface.",
+      "html": "<button class=\"ds-btn-outlined\">Scan LAN</button>",
+      "css": ".ds-btn-outlined { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: #FFE8D1; color: #F5922F; padding: 16px 24px; border: none; border-radius: 16px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-btn-outlined:hover { background: #FFE0BF; }"
+    },
+    {
+      "name": "Pill Selector",
+      "kind": "chip",
+      "refersTo": "pill-selected",
+      "description": "Segmented control with a sliding selected pill.",
+      "html": "<div class=\"ds-pill-group\"><button class=\"ds-pill-selected\">Day</button><button class=\"ds-pill\">Week</button><button class=\"ds-pill\">Month</button></div>",
+      "css": ".ds-pill-group { display: inline-flex; background: #F5E0C8; border-radius: 28px; padding: 4px; gap: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; } .ds-pill { background: transparent; color: #1A120B; border: none; border-radius: 24px; padding: 8px 16px; font-weight: 400; font-size: 12px; cursor: pointer; } .ds-pill-selected { background: #F5922F; color: #3E1E00; border: none; border-radius: 24px; padding: 8px 16px; font-weight: 700; font-size: 12px; cursor: pointer; }"
+    },
+    {
+      "name": "Server Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "List item card for a saved or discovered service.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-icon\"></div><div class=\"ds-card-body\"><div class=\"ds-card-title\">IANWYCHEN-MC0</div><div class=\"ds-card-meta\"><span class=\"ds-dot-online\"></span> Online • v0.1.0 • 2h 30m</div><div class=\"ds-card-address\">192.168.0.104:8000</div></div></div>",
+      "css": ".ds-card { display: flex; align-items: center; gap: 12px; background: #FFF1DE; border-radius: 20px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #1A120B; } .ds-card-icon { width: 48px; height: 48px; border-radius: 12px; background: #F5E0C8; flex-shrink: 0; } .ds-card-body { display: flex; flex-direction: column; gap: 2px; } .ds-card-title { font-weight: 700; font-size: 16px; } .ds-card-meta { font-size: 12px; color: #5A3E2E; display: flex; align-items: center; gap: 6px; } .ds-dot-online { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; } .ds-card-address { font-size: 12px; color: #5A3E2E; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Outlined text field used in dialogs.",
+      "html": "<input class=\"ds-input\" placeholder=\"Token (optional)\" />",
+      "css": ".ds-input { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: transparent; color: #1A120B; border: 1px solid #9A7A60; border-radius: 14px; padding: 16px 12px; font-size: 14px; outline: none; transition: border-color 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-input:focus { border-color: #F5922F; }"
+    },
+    {
+      "name": "Top Toast",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "Floating feedback toast sliding from the top.",
+      "html": "<div class=\"ds-toast\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z\"/></svg><span>Service added</span></div>",
+      "css": ".ds-toast { display: inline-flex; align-items: center; gap: 10px; background: #FFE0BF; color: #1A120B; border-radius: 16px; padding: 12px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; font-weight: 500; box-shadow: 0 6px 16px rgba(0,0,0,0.12); }"
+    },
+    {
+      "name": "Manga Cover Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "2:3 cover card with title overlay and optional badge.",
+      "html": "<div class=\"ds-cover-card\"><div class=\"ds-cover-badge\">NEW</div><div class=\"ds-cover-title\">Chapter Title</div></div>",
+      "css": ".ds-cover-card { position: relative; width: 140px; aspect-ratio: 2/3; border-radius: 16px; background: linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.7) 100%), #F5E0C8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow: hidden; } .ds-cover-badge { position: absolute; top: 8px; right: 8px; background: #FFD8A8; color: #3E1E00; border-radius: 8px; padding: 4px 8px; font-size: 10px; font-weight: 800; } .ds-cover-title { position: absolute; bottom: 12px; left: 12px; right: 12px; color: #fff; font-weight: 700; font-size: 12px; line-height: 1.3; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Private Bookshelf",
+    "overview": "JM Manga's design system is built around the idea of a private bookshelf: a reading corner that belongs only to the user, free of ads, social pressure, or algorithmic noise. The color palette is extracted from icon.png: the orange cat provides the primary accent, the pink ears and paws provide the coral secondary, the yellow stars provide the gold tertiary, and the cream halftone background provides the neutral base. The visual language is warm and restrained—cream surfaces, warm orange accents, and a single monospaced typeface create a calm, personal atmosphere. Dark mode maps these warm colors onto deep brown surfaces rather than cold gray, so late-night reading stays gentle on the eyes.\n\nThe interface uses tonal layering rather than shadows to express depth, with rounded but not childish corners. High-saturation colors are used sparingly, reserved for primary actions, selected states, and badges. The overall mood is that of a desk lamp in the evening: enough light to find what you need, gentle enough not to pull you out of the story.",
+    "keyCharacteristics": [
+      "Warm restraint: warm palette with high-saturation accents kept small.",
+      "Private bookshelf feel: personal data, no marketing urgency.",
+      "Soft rounded corners: 12–20px radius for approachability without childishness.",
+      "Monospaced order: single font family (MapleMonoNormalCN) across all text.",
+      "Honest feedback: offline/error states shown directly, never faked."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "High-saturation colors (Primary Orange / Secondary Coral / Tertiary Gold) should only appear once as the dominant accent on any given screen.",
+        "section": "colors"
+      },
+      {
+        "name": "The Darker-When-Lighter Rule",
+        "body": "In light mode, deeper surface containers mean higher elevation; in dark mode, lighter surface containers mean higher elevation.",
+        "section": "colors"
+      },
+      {
+        "name": "The Single Family Rule",
+        "body": "Only use MapleMonoNormalCN across the entire app. Hierarchy comes from weight and size, not font mixing.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Cards, buttons, and inputs are flat by default. Depth is conveyed through tonal layering; shadows are reserved for floating feedback like Toast.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Warm-Dark Rule",
+        "body": "Dark mode backgrounds are deep brown (#1A1512), not black or cold gray. Warm tones keep late-night reading gentle.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Use Cream (#FFF8ED) as the light-mode page background.",
+      "Reserve Primary Orange for actions that need attention: primary buttons, selected pills, key badges.",
+      "Use surface container tiers (Low / Default / High / Highest) to express elevation.",
+      "Show honest offline/error states with a red dot and 'Offline' label."
+    ],
+    "donts": [
+      "Use the cluttered ad-heavy style of piracy resource sites.",
+      "Apply high-saturation colors to large background areas.",
+      "Introduce a second decorative font family.",
+      "Add default shadows to cards and buttons.",
+      "Use oversized corners (≥32px) on cards.",
+      "Use cold gray backgrounds (#121212 style) in dark mode; it conflicts with the warm icon palette."
+    ]
+  }
+}

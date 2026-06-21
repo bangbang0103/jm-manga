@@ -1,0 +1,7 @@
+# Android release signing configuration.
+# Copy this file to key.properties and fill in your own values.
+# Never commit key.properties or the keystore file to version control.
+storePassword=<your-store-password>
+keyPassword=<your-key-password>
+keyAlias=<your-key-alias>
+storeFile=<path-to-your-keystore>.jks

@@ -1,0 +1,65 @@
+# Local connect attachments
+.cc-connect/
+
+# Agent tooling
+.agents/
+.claude/
+.codebuddy/
+.hermes/
+.trae/
+.impeccable/config.local.json
+skills-lock.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+.uv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Tooling secrets
+opencode.json
+
+# Data
+/data/
+server/data/
+server/web/
+server/dist
+*.db
+*.sqlite
+*.sqlite3
+
+# Flutter
+ui/.dart_tool/
+ui/.flutter-plugins
+ui/.flutter-plugins-dependencies
+ui/.packages
+ui/build/
+ui/ios/Pods/
+ui/ios/.symlinks/
+ui/android/.gradle/
+ui/android/app/debug/
+ui/android/app/profile/
+ui/android/app/release/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
