@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:jm_manga/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,8 +6,10 @@ import 'package:go_router/go_router.dart';
 import '../providers/album_providers.dart';
 import '../providers/config_provider.dart';
 import '../providers/repository_provider.dart';
+import '../providers/search_history_provider.dart';
 import '../utils/error_mapper.dart';
 import '../utils/favorite_action.dart';
+import '../utils/top_toast.dart';
 import '../widgets/animations/staggered_grid.dart';
 import '../widgets/error_placeholder.dart';
 import '../widgets/loading_indicator.dart';
@@ -27,7 +27,6 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _controller = TextEditingController();
   late String _query;
-  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -36,9 +35,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     _controller.text = _query;
   }
 
-  void _search() {
-    _debounceTimer?.cancel();
+  void _search({bool saveToHistory = false}) {
     final trimmed = _controller.text.trim();
+
+    if (saveToHistory && trimmed.isNotEmpty) {
+      ref.read(searchHistoryProvider.notifier).add(trimmed);
+    }
+
     if (trimmed == _query) return;
     setState(() {
       _query = trimmed;
@@ -46,17 +49,67 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _onSearchChanged(String value) {
-    _debounceTimer?.cancel();
+    // 不再输入过程中自动搜索，只有点击搜索按钮/键盘提交/历史 chip 时才搜索。
     if (value.trim().isEmpty) {
       setState(() => _query = '');
-      return;
     }
-    _debounceTimer = Timer(const Duration(milliseconds: 500), _search);
+  }
+
+  void _searchFromHistory(String query) {
+    _controller.text = query;
+    _controller.selection = TextSelection.collapsed(offset: query.length);
+    _search(saveToHistory: true);
+  }
+
+  Future<void> _deleteHistory(String query) async {
+    await ref.read(searchHistoryProvider.notifier).remove(query);
+    if (mounted) {
+      TopToast.show(
+        context,
+        AppLocalizations.of(context)!.searchHistoryDeleted,
+        type: TopToastType.success,
+      );
+    }
+  }
+
+  Future<void> _confirmClearHistory() async {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.confirmClearSearchHistoryTitle),
+        content: Text(l10n.confirmClearSearchHistoryBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+            ),
+            child: Text(l10n.clearAll),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(searchHistoryProvider.notifier).clear();
+      if (mounted) {
+        TopToast.show(
+          context,
+          l10n.searchHistoryCleared,
+          type: TopToastType.success,
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -68,6 +121,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final results = _query.isEmpty
         ? const AsyncValue<List<dynamic>>.data([])
         : ref.watch(searchProvider(_query));
+    final history = ref.watch(searchHistoryProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -80,16 +134,33 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
           style: theme.textTheme.bodyLarge,
           onChanged: _onSearchChanged,
-          onSubmitted: (_) => _search(),
+          onSubmitted: (_) => _search(saveToHistory: true),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: _search),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton.tonal(
+              onPressed: () => _search(saveToHistory: true),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              child: Text(l10n.actionSearch),
+            ),
+          ),
         ],
       ),
       body: results.when(
         data: (items) {
           if (_query.isEmpty) {
-            return Center(child: Text(l10n.searchPrompt));
+            return _SearchHistoryView(
+              history: history,
+              onTap: _searchFromHistory,
+              onDelete: _deleteHistory,
+              onClearAll: _confirmClearHistory,
+            );
           }
           final notifier = ref.read(searchProvider(_query).notifier);
           return RefreshIndicator(
@@ -119,6 +190,71 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+class _SearchHistoryView extends StatelessWidget {
+  final List<String> history;
+  final ValueChanged<String> onTap;
+  final ValueChanged<String> onDelete;
+  final VoidCallback onClearAll;
+
+  const _SearchHistoryView({
+    required this.history,
+    required this.onTap,
+    required this.onDelete,
+    required this.onClearAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    if (history.isEmpty) {
+      return Center(child: Text(l10n.emptySearchHistory));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                l10n.searchHistoryTitle,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: onClearAll,
+                child: Text(l10n.clearAll),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: history.map((query) {
+                return InputChip(
+                  label: Text(query),
+                  deleteIcon: const Icon(Icons.close, size: 18),
+                  onDeleted: () => onDelete(query),
+                  onPressed: () => onTap(query),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

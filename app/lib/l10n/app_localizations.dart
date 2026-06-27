@@ -158,6 +158,12 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get actionRetry;
 
+  /// No description provided for @actionSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get actionSearch;
+
   /// No description provided for @imageDownload.
   ///
   /// In en, this message translates to:
@@ -217,6 +223,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No results'**
   String get searchNoResults;
+
+  /// No description provided for @searchHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search history'**
+  String get searchHistoryTitle;
+
+  /// No description provided for @emptySearchHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No search history yet'**
+  String get emptySearchHistory;
+
+  /// No description provided for @clearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get clearAll;
+
+  /// No description provided for @confirmClearSearchHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search history?'**
+  String get confirmClearSearchHistoryTitle;
+
+  /// No description provided for @confirmClearSearchHistoryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove all search history.'**
+  String get confirmClearSearchHistoryBody;
+
+  /// No description provided for @searchHistoryCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Search history cleared'**
+  String get searchHistoryCleared;
+
+  /// No description provided for @searchHistoryDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Search history deleted'**
+  String get searchHistoryDeleted;
 
   /// No description provided for @emptyNoItems.
   ///

@@ -39,6 +39,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get actionRetry => '重试';
 
   @override
+  String get actionSearch => '搜索';
+
+  @override
   String get imageDownload => '下载图片';
 
   @override
@@ -67,6 +70,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get searchNoResults => '无结果';
+
+  @override
+  String get searchHistoryTitle => '搜索历史';
+
+  @override
+  String get emptySearchHistory => '暂无搜索历史';
+
+  @override
+  String get clearAll => '清空全部';
+
+  @override
+  String get confirmClearSearchHistoryTitle => '清空搜索历史';
+
+  @override
+  String get confirmClearSearchHistoryBody => '确定要清空所有搜索历史吗？';
+
+  @override
+  String get searchHistoryCleared => '搜索历史已清空';
+
+  @override
+  String get searchHistoryDeleted => '已删除该搜索记录';
 
   @override
   String get emptyNoItems => '暂无内容';

@@ -39,6 +39,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionRetry => 'Retry';
 
   @override
+  String get actionSearch => 'Search';
+
+  @override
   String get imageDownload => 'Download image';
 
   @override
@@ -67,6 +70,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchNoResults => 'No results';
+
+  @override
+  String get searchHistoryTitle => 'Search history';
+
+  @override
+  String get emptySearchHistory => 'No search history yet';
+
+  @override
+  String get clearAll => 'Clear all';
+
+  @override
+  String get confirmClearSearchHistoryTitle => 'Clear search history?';
+
+  @override
+  String get confirmClearSearchHistoryBody =>
+      'This will remove all search history.';
+
+  @override
+  String get searchHistoryCleared => 'Search history cleared';
+
+  @override
+  String get searchHistoryDeleted => 'Search history deleted';
 
   @override
   String get emptyNoItems => 'No items';
