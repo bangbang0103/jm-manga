@@ -139,9 +139,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: FilledButton.tonal(
+            child: FilledButton(
               onPressed: () => _search(saveToHistory: true),
               style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
