@@ -36,6 +36,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get actionAdd => '添加';
 
   @override
+  String get actionRetry => '重试';
+
+  @override
   String get imageDownload => '下载图片';
 
   @override

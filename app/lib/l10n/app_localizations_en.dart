@@ -36,6 +36,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionAdd => 'Add';
 
   @override
+  String get actionRetry => 'Retry';
+
+  @override
   String get imageDownload => 'Download image';
 
   @override

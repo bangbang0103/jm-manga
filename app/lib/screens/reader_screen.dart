@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../data/manga_repository.dart';
 import '../core/theme/app_shadows.dart';
 import '../widgets/animated_favorite_button.dart';
+import '../widgets/error_placeholder.dart';
 import '../widgets/loading_indicator.dart';
 import '../models/album.dart';
 import '../models/reading_progress.dart';
@@ -236,7 +237,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final initialData = widget.initialData;
     final photoAsync = ref.watch(photoDetailProvider(widget.photoId));
+    final photoAlbumId = photoAsync.valueOrNull?.albumId;
+    final needsAlbum = photoAlbumId != null &&
+        (initialData == null || initialData.album.albumId != photoAlbumId);
+    final albumAsync =
+        needsAlbum ? ref.watch(albumDetailProvider(photoAlbumId)) : null;
+    final showAppBar = photoAsync.isLoading ||
+        photoAsync.hasError ||
+        (albumAsync != null && (albumAsync.isLoading || albumAsync.hasError));
+    final appBarTitle =
+        initialData?.album.title ?? photoAsync.valueOrNull?.title ?? '';
 
     return PopScope(
       onPopInvokedWithResult: (didPop, result) async {
@@ -246,9 +258,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
       },
       child: Scaffold(
         backgroundColor: theme.colorScheme.surface,
+        appBar: showAppBar
+            ? AppBar(
+                leading: const BackButton(),
+                title: Text(appBarTitle),
+              )
+            : null,
         body: photoAsync.when(
           data: (photo) {
-            final initialData = widget.initialData;
             if (initialData != null &&
                 initialData.album.albumId == photo.albumId) {
               return _buildReaderContent(
@@ -260,7 +277,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
               );
             }
 
-            final albumAsync = ref.watch(albumDetailProvider(photo.albumId));
+            if (albumAsync == null) {
+              // Already handled by the initialData branch above.
+              return const SizedBox.shrink();
+            }
+
             return albumAsync.when(
               data: (album) {
                 final progressList = ref
@@ -276,13 +297,20 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
                 );
               },
               loading: () => const AppLoadingIndicator(size: 28),
-              error: (e, _) =>
-                  Center(child: Text(mapErrorToUserMessage(e, l10n))),
+              error: (e, _) => ErrorPlaceholder(
+                message: mapErrorToUserMessage(e, l10n),
+                onRetry: () =>
+                    ref.invalidate(albumDetailProvider(photo.albumId)),
+                retryLabel: l10n.actionRetry,
+              ),
             );
           },
           loading: () => const AppLoadingIndicator(size: 28),
-          error: (e, _) => Center(
-            child: Text(mapErrorToUserMessage(e, l10n)),
+          error: (e, _) => ErrorPlaceholder(
+            message: mapErrorToUserMessage(e, l10n),
+            onRetry: () =>
+                ref.invalidate(photoDetailProvider(widget.photoId)),
+            retryLabel: l10n.actionRetry,
           ),
         ),
       ),

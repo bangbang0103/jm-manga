@@ -152,6 +152,12 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get actionAdd;
 
+  /// No description provided for @actionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get actionRetry;
+
   /// No description provided for @imageDownload.
   ///
   /// In en, this message translates to:

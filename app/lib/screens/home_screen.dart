@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../models/album.dart';
 import '../models/reading_progress.dart';
+import '../widgets/error_placeholder.dart';
 import '../widgets/loading_indicator.dart';
 import '../providers/album_providers.dart';
 import '../providers/repository_provider.dart';
@@ -174,9 +175,12 @@ class _HorizontalCategorySection extends ConsumerWidget {
                 );
               },
               loading: () => const AppLoadingIndicator(size: 28),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(mapErrorToUserMessage(e, l10n)),
+              error: (e, _) => ErrorPlaceholder(
+                message: mapErrorToUserMessage(e, l10n),
+                onRetry: () => ref.invalidate(
+                  categoryProvider(CategoryKey(slug, 'mr')),
+                ),
+                retryLabel: l10n.actionRetry,
               ),
             ),
           ),

@@ -9,6 +9,7 @@
   "actionCancel": "Cancel",
   "actionCopy": "Copy",
   "actionAdd": "Add",
+  "actionRetry": "Retry",
   "imageDownload": "Download image",
   "imageDownloadStarted": "Downloading image…",
   "imageLoading": "Loading…",

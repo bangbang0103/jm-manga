@@ -10,6 +10,7 @@ import '../models/reading_progress.dart';
 import '../models/reader_initial_data.dart';
 import '../widgets/animated_favorite_button.dart';
 import '../widgets/app_dropdown.dart';
+import '../widgets/error_placeholder.dart';
 import '../widgets/loading_indicator.dart';
 import '../providers/album_providers.dart';
 import '../providers/repository_provider.dart';
@@ -193,8 +194,15 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
     final albumAsync = ref.watch(albumDetailProvider(widget.albumId));
     final progressAsync = ref.watch(albumProgressProvider(widget.albumId));
     final favoriteStatusAsync = ref.watch(favoriteStatusProvider(widget.albumId));
+    final showAppBar = albumAsync.isLoading || albumAsync.hasError;
 
     return Scaffold(
+      appBar: showAppBar
+          ? AppBar(
+              leading: const BackButton(),
+              title: const SizedBox.shrink(),
+            )
+          : null,
       body: albumAsync.when(
         data: (album) {
           final progressList = progressAsync.valueOrNull ?? [];
@@ -458,8 +466,19 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
           );
         },
         loading: () => const AppLoadingIndicator(size: 28),
-        error: (e, _) => Center(
-          child: Text(mapErrorToUserMessage(e, l10n)),
+        error: (e, _) => RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(albumDetailProvider(widget.albumId));
+            ref.invalidate(albumProgressProvider(widget.albumId));
+          },
+          child: ErrorPlaceholder(
+            message: mapErrorToUserMessage(e, l10n),
+            onRetry: () {
+              ref.invalidate(albumDetailProvider(widget.albumId));
+              ref.invalidate(albumProgressProvider(widget.albumId));
+            },
+            retryLabel: l10n.actionRetry,
+          ),
         ),
       ),
       bottomNavigationBar: albumAsync.maybeWhen(

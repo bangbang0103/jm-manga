@@ -11,6 +11,7 @@ import '../providers/repository_provider.dart';
 import '../utils/error_mapper.dart';
 import '../utils/favorite_action.dart';
 import '../widgets/animations/staggered_grid.dart';
+import '../widgets/error_placeholder.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/manga_cover_card.dart';
 
@@ -109,8 +110,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           );
         },
         loading: () => const AppLoadingIndicator(),
-        error: (e, _) =>
-            Center(child: Text(mapErrorToUserMessage(e, l10n))),
+        error: (e, _) {
+          final notifier = ref.read(searchProvider(_query).notifier);
+          return ErrorPlaceholder(
+            message: mapErrorToUserMessage(e, l10n),
+            onRetry: notifier.search,
+            retryLabel: l10n.actionRetry,
+          );
+        },
       ),
     );
   }

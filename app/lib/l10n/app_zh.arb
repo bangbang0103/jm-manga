@@ -9,6 +9,7 @@
   "actionCancel": "取消",
   "actionCopy": "复制",
   "actionAdd": "添加",
+  "actionRetry": "重试",
   "imageDownload": "下载图片",
   "imageDownloadStarted": "正在下载图片…",
   "imageLoading": "加载中…",
