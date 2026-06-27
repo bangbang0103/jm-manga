@@ -2,119 +2,88 @@
 
 ## 总览
 
-JM Manga 是个人使用的跨平台漫画阅读工具：
+JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS 与 Android。
 
-- 后端：FastAPI 代理 JMComic，负责搜索、分类、排行、详情、图片代理、收藏夹缓存和阅读进度。
-- 前端：Flutter 客户端，负责服务选择、账号管理、列表浏览、详情页、阅读器和设置。
-- 存储：后端 SQLite 保存阅读进度、收藏夹缓存、JM cookies 和可选加密密码；图片和封面缓存在文件系统。
-- 部署：后端可以从源码目录或源码包运行，默认持久数据放在 `$HOME/.jm-manga`。
+- **前端**：Flutter 客户端直接请求数据源接口与图片服务。
+- **本地存储**：`SecureStorage` 保存账号凭据和会话凭证；SQLite 保存收藏与阅读进度；SharedPreferences 保存代理、日志级别、主题、语言、图片缓存 LRU 元数据等非敏感配置。搜索历史当前未持久化。
+- **发布**：直接构建 APK/IPA 后安装即可使用。
 
-## 后端
 
-主要模块：
-
-- `main.py`：FastAPI app、lifespan、路由挂载、health/ready/metrics。
-- `config.py`：环境变量配置。
-- `auth.py`：API Token 校验，客户端使用 `Authorization: Bearer <API_TOKEN>`。
-- `database.py`：SQLite async engine、session 和轻量迁移。
-- `jm_client.py`：创建 jmcomic async client。
-- `cookies.py`：JM 账号 cookies、当前账号和可选加密密码。
-- `routers/`：业务 API。
-
-核心 API 前缀为 `/api/v1`。
 
 ## 版本管理
 
-根目录 `VERSION` 是应用版本源头，格式为 `x.y.z` 或 `x.y.z-prerelease`，不要包含 Flutter 的 `+<build-number>`。后端有两个需要同步的位置：
-
-- `server/src/jm_manga_server/version.py`：运行时版本，用于 `/health` 和 mDNS。
-- `server/pyproject.toml`：Python 包版本。
-
-Flutter App 版本来自 `ui/pubspec.yaml`，格式为 `<VERSION>+<build-number>`；界面设置页通过 `package_info_plus` 读取这个版本。修改根 `VERSION` 后运行：
+根目录 `VERSION` 是应用版本源头，格式为 `x.y.z` 或 `x.y.z-prerelease`，不要包含 Flutter 的 `+<build-number>`。`app/pubspec.yaml` 使用 `<VERSION>+<build-number>` 格式，界面设置页通过 `package_info_plus` 读取。修改根 `VERSION` 后运行：
 
 ```bash
 ./scripts/sync-version.sh
 ```
 
-## 鉴权边界
-
-后端 API Token 是访问本服务的权限，不是 JM 账号密码。客户端通过标准 Bearer 头传递：
-
-```http
-Authorization: Bearer <API_TOKEN>
-```
-
-约定：
-
-- `/health`：未鉴权，仅判断进程存活。
-- `/ready`：未鉴权，用于部署 readiness。
-- `/api/v1/*` 业务接口：按路由配置进行 API Token 校验。
-- `/api/v1/images/{photo_id}/{image_index}`：使用图片签名 token，保护可分享图片 URL。
-- `/api/v1/server/cache`：轻量受保护接口，可用于客户端验证服务 token 是否有效。
-
-Flutter 连接服务时应先检查 `/health`，再请求已有受保护接口确认 API Token 正确。
-
-## 数据与缓存
-
-后端默认数据路径：
-
-```text
-$HOME/.jm-manga/app.db
-$HOME/.jm-manga/cache/
-```
-
-也可以通过环境变量覆盖：
-
-```text
-DB_PATH=/path/to/app.db
-CACHE_DIR=/path/to/cache
-```
-
-数据库和缓存不要放在 release / build 目录里，避免更新服务或清理构建产物时误删运行数据。
+该脚本仅同步 Flutter 版本号。
 
 ## 前端
 
 主要目录：
 
-- `lib/data/`：Dio client 与 repository。
-- `lib/providers/`：Riverpod 状态，包含配置、服务、账号、列表和同步信号。
-- `lib/screens/`：主页面、服务选择、搜索、排行榜、书架、详情、阅读器、设置。
+- `lib/core/`：主题等应用级基础配置。
+- `lib/data/`：repository、数据映射与业务服务（如收藏服务）。
+- `lib/models/`：数据模型。
+- `lib/network/`：网络层，包含 HTTP 代理覆盖、代理配置、错误映射，以及 `network/jm/` 子目录下的 JM 数据源 client、常量、加密、域名、图片服务与解码。
+- `lib/local/`：本地 records 管理（基于 SQLite）。
+- `lib/l10n/`：本地化 ARB 与 generated 文件。
+- `lib/providers/`：Riverpod 状态，包含账号、配置、列表和同步信号。
+- `lib/screens/`：主页面、搜索、排行榜、书架、详情、阅读器、设置、缓存、日志、代理设置、高级选项等。
+- `lib/utils/`：日志、存储、缓存清理、图片下载、收藏动作、Toast 等工具。
 - `lib/widgets/`：通用 UI 组件。
-- `lib/models/`：API 数据模型。
+- `lib/router.dart`：go_router 路由配置。
+
+运行模式：
+
+- 应用固定直连 JM 数据源接口与图片服务，无后端服务器选择入口。
+- 网络层支持在 设置 > 高级选项 > 代理设置 中配置 HTTP / SOCKS5 代理。
 
 敏感信息：
 
-- 服务 API Token 保存在 `SecureStorage`。
-- JM 账号密码保存在 `SecureStorage`。
-- SharedPreferences 只保存非敏感配置或旧数据迁移入口。
+- 账号密码保存在 `SecureStorage`。
+- 会话凭证保存在 `SecureStorage`。
+- SharedPreferences 保存非敏感配置（代理、日志级别、主题、语言、图片缓存 LRU 元数据等）。
+- 收藏与阅读进度保存在 SQLite。
+- 删除账号时由 `AccountSecretStore` 统一清理 password 与 session cookie，并 `invalidate` repository provider 释放内存中的旧客户端实例。
+
+## 收藏同步
+
+收藏数据保存在本地（`LocalMangaStore` + `LocalMangaRecords`），并通过 `DirectMangaRepository.syncFavorites(full: true)` 与远端收藏列表同步：
+
+- 手动同步时一次性拉取远端全部收藏。
+- 与本地 `pendingAdd` / `pendingRemove` 做 diff：
+  - `pendingAdd` 且远端不存在时才调用 `toggleFavorite`；已存在则直接标记为 `synced`。
+  - `pendingRemove` 且远端存在时才调用 `toggleFavorite`；不存在则直接删除本地记录。
+- 合并后的列表整表替换本地收藏，失败的 pending 项保留原状态，并提示用户部分同步失败。
+- 登录（`loginToJm`）只完成账号登录与凭证持久化，不再自动合并或全量同步收藏。
+- 后台定时同步已取消，收藏同步完全由用户手动触发。
 
 ## 阅读进度
 
-阅读器根据当前可见页更新 `_currentIndex`，延迟同步到后端 `/api/v1/progress`。重新进入章节时，前端读取保存的 `image_index` 并尝试滚动到对应页。
+阅读器根据当前可见页更新 `_currentIndex`，并保存到本地 SQLite。重新进入章节时，前端读取保存的 `image_index` 并尝试滚动到对应页。
 
-阅读进度不依赖 JM 登录状态：
+进度归属：
 
-- Flutter 客户端生成稳定 `device_id`，通过 `X-Device-Id` 发送给后端。
-- 未选择 JM 账号时，进度按 `device_id + album_id + photo_id` 归属。
-- 选择 JM 账号时，进度按 `jm_username + album_id + photo_id` 归属，同时记录最后写入的 `device_id`。
-- 查询登录账号进度时，后端返回当前账号记录以及当前设备的匿名记录，并按章节/本子取最新记录去重；不会按 `device_id` 匹配同设备上的其它 JM 账号记录。
+- 按 `jm_username + album_id + photo_id` 归属（已登录账号）。
+- 未选择 JM 账号时，按 `device_id + album_id + photo_id` 归属。
 
-## 部署模型
+## 图片与缓存
 
-源码包解压后会得到：
+- 图片通过 `JmImageService` 请求图片服务，支持重试与并发限制。
+- 封面和阅读页图片缓存到应用私有缓存目录。
+- 正文图解码已通过 `compute` 在 isolate 中执行；封面图直接缓存原字节。
+- 图片缓存支持 LRU 容量限制与智能清理：封面图上限 256 MB、14 天未访问自动清理；正文图上限 512 MB、7 天未访问自动清理。应用冷启动时异步执行清理，不阻塞 UI。
 
-```text
-jm-manga-server-source-v<version>/
-```
+## 设计约束
 
-默认 `.env` 可以放在运行目录，也可以显式指定：
+- 当前仅支持 iOS 与 Android。
+- 数据源接口的 token、版本、域名和加密协议可能变化，相关常量集中在 `app/lib/jm/` 管理。
+- `repos/` 目录下的参考源码仅用于本地查阅，不作为应用依赖打包。
+- 不提交真实 `.env`、数据库、缓存、签名文件或构建产物。
 
-```text
-uv run jm-manga-server init-env --path $HOME/.jm-manga/.env
-```
+## 数据目录
 
-默认持久数据位于：
-
-```text
-$HOME/.jm-manga
-```
+默认持久数据位于应用私有目录，不放在 `build/` 或 release 目录内，避免清理构建产物时误删。

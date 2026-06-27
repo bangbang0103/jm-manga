@@ -3,8 +3,6 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_ROOT="${OUT_ROOT:-${ROOT_DIR}/build}"
-WEB_SERVER_DIR="${WEB_SERVER_DIR:-${ROOT_DIR}/server/web}"
-WEB_BASE_HREF="${WEB_BASE_HREF:-/}"
 FLUTTER_BIN="${FLUTTER_BIN:-flutter}"
 APP_NAME="${APP_NAME:-jm-manga}"
 MODE="${BUILD_MODE:-release}"
@@ -15,7 +13,7 @@ export LC_ALL="en_US.UTF-8"
 
 usage() {
   cat <<'EOF'
-Usage: scripts/build-flutter.sh <apk|ios|web|all>
+Usage: scripts/build-flutter.sh <apk|ios|all>
 
 Environment:
   APP_NAME=jm-manga                  Artifact name prefix. Default: jm-manga
@@ -24,8 +22,6 @@ Environment:
                                       iOS output kind. Default: unsigned-ipa
   FLUTTER_BIN=/path/to/flutter       Flutter executable. Default: flutter
   OUT_ROOT=/path/to/output           Output root. Default: build
-  WEB_BASE_HREF=/path/                Flutter web base href. Default: /
-  WEB_SERVER_DIR=/path/to/server/web  Copy web assets here too. Default: server/web
 EOF
 }
 
@@ -36,7 +32,7 @@ project_version() {
 app_version() {
   local version pubspec_version build_number
   version="$(project_version)"
-  pubspec_version="$(awk '/^version:/ {print $2; exit}' "${ROOT_DIR}/ui/pubspec.yaml")"
+  pubspec_version="$(awk '/^version:/ {print $2; exit}' "${ROOT_DIR}/app/pubspec.yaml")"
   if [[ "${pubspec_version}" == *+* ]]; then
     build_number="${pubspec_version#*+}"
     printf "%s+%s" "${version}" "${build_number}"
@@ -82,17 +78,31 @@ flutter_args_for_mode() {
   esac
 }
 
+write_checksum() {
+  local file="$1"
+  local checksum_file="${file}.sha256"
+  if command -v sha256sum >/dev/null 2>&1; then
+    (cd "$(dirname "${file}")" && sha256sum "$(basename "${file}")") > "${checksum_file}"
+  elif command -v shasum >/dev/null 2>&1; then
+    (cd "$(dirname "${file}")" && shasum -a 256 "$(basename "${file}")") > "${checksum_file}"
+  else
+    echo "Warning: neither sha256sum nor shasum found, skipping checksum for ${file}" >&2
+    return 0
+  fi
+  echo "Checksum ${checksum_file}"
+}
+
 build_apk() {
   local mode_arg source out_dir out_path version
   mode_arg="$(flutter_args_for_mode)"
   version="$(app_version)"
   out_dir="${OUT_ROOT}"
-  out_path="${out_dir}/${APP_NAME}-flutter-apk-v${version}-android-${MODE}.apk"
+  out_path="${out_dir}/${APP_NAME}-apk-v${version}-android-${MODE}.apk"
 
   echo "==> Building Flutter APK (${MODE})"
-  (cd "${ROOT_DIR}/ui" && "${FLUTTER_BIN}" pub get && "${FLUTTER_BIN}" build apk "${mode_arg}")
+  (cd "${ROOT_DIR}/app" && "${FLUTTER_BIN}" pub get && "${FLUTTER_BIN}" build apk "${mode_arg}")
 
-  source="${ROOT_DIR}/ui/build/app/outputs/flutter-apk/app-${MODE}.apk"
+  source="${ROOT_DIR}/app/build/app/outputs/flutter-apk/app-${MODE}.apk"
   if [[ ! -f "${source}" ]]; then
     echo "Expected APK not found: ${source}" >&2
     exit 1
@@ -101,38 +111,7 @@ build_apk() {
   mkdir -p "${out_dir}"
   cp -f "${source}" "${out_path}"
   echo "Built ${out_path}"
-}
-
-build_web() {
-  local mode_arg source package_path version
-  mode_arg="$(flutter_args_for_mode)"
-  version="$(app_version)"
-  source="${ROOT_DIR}/ui/build/web"
-  package_path="${OUT_ROOT}/${APP_NAME}-flutter-web-v${version}-web-${MODE}.tar.gz"
-
-  echo "==> Building Flutter Web (${MODE}, base-href=${WEB_BASE_HREF})"
-  (
-    cd "${ROOT_DIR}/ui"
-    "${FLUTTER_BIN}" pub get
-    "${FLUTTER_BIN}" build web "${mode_arg}" --base-href "${WEB_BASE_HREF}"
-  )
-
-  if [[ ! -f "${source}/index.html" ]]; then
-    echo "Expected Flutter web output not found: ${source}" >&2
-    exit 1
-  fi
-
-  mkdir -p "${OUT_ROOT}"
-  rm -f "${package_path}"
-  LC_ALL=C tar -C "${source}" -czf "${package_path}" .
-  echo "Packed ${package_path}"
-
-  if [[ -n "${WEB_SERVER_DIR}" ]]; then
-    rm -rf "${WEB_SERVER_DIR}"
-    mkdir -p "${WEB_SERVER_DIR}"
-    cp -R "${source}/." "${WEB_SERVER_DIR}/"
-    echo "Copied web assets to ${WEB_SERVER_DIR}"
-  fi
+  write_checksum "${out_path}"
 }
 
 build_ios() {
@@ -151,24 +130,25 @@ build_ios() {
 
   if [[ "${IOS_EXPORT}" == "unsigned-ipa" ]]; then
     local unsigned_root unsigned_ipa
-    unsigned_root="${ROOT_DIR}/ui/build/ios/unsigned-ipa"
-    unsigned_ipa="${out_dir}/${APP_NAME}-flutter-unsigned-ipa-v${version}-ios-${MODE}.ipa"
+    unsigned_root="${ROOT_DIR}/app/build/ios/unsigned-ipa"
+    unsigned_ipa="${out_dir}/${APP_NAME}-unsigned-ipa-v${version}-ios-${MODE}.ipa"
 
     echo "==> Building unsigned Flutter iOS IPA (${MODE})"
-    (cd "${ROOT_DIR}/ui" && "${FLUTTER_BIN}" pub get && "${FLUTTER_BIN}" build ios "${mode_arg}" --no-codesign)
+    (cd "${ROOT_DIR}/app" && "${FLUTTER_BIN}" pub get && "${FLUTTER_BIN}" build ios "${mode_arg}" --no-codesign)
 
-    if [[ ! -d "${ROOT_DIR}/ui/build/ios/iphoneos/Runner.app" ]]; then
-      echo "Expected iOS app not found: ${ROOT_DIR}/ui/build/ios/iphoneos/Runner.app" >&2
+    if [[ ! -d "${ROOT_DIR}/app/build/ios/iphoneos/Runner.app" ]]; then
+      echo "Expected iOS app not found: ${ROOT_DIR}/app/build/ios/iphoneos/Runner.app" >&2
       exit 1
     fi
 
     rm -rf "${unsigned_root}"
     mkdir -p "${unsigned_root}/Payload"
-    cp -R "${ROOT_DIR}/ui/build/ios/iphoneos/Runner.app" "${unsigned_root}/Payload/Runner.app"
+    cp -R "${ROOT_DIR}/app/build/ios/iphoneos/Runner.app" "${unsigned_root}/Payload/Runner.app"
 
     rm -f "${unsigned_ipa}"
     (cd "${unsigned_root}" && zip -qry "${unsigned_ipa}" Payload)
     echo "Built ${unsigned_ipa}"
+    write_checksum "${unsigned_ipa}"
     return
   fi
 
@@ -178,18 +158,19 @@ build_ios() {
   fi
 
   echo "==> Building unsigned Flutter iOS app (${MODE})"
-  (cd "${ROOT_DIR}/ui" && "${FLUTTER_BIN}" pub get && "${FLUTTER_BIN}" build ios "${mode_arg}" --no-codesign)
+  (cd "${ROOT_DIR}/app" && "${FLUTTER_BIN}" pub get && "${FLUTTER_BIN}" build ios "${mode_arg}" --no-codesign)
 
-  if [[ ! -d "${ROOT_DIR}/ui/build/ios/iphoneos/Runner.app" ]]; then
-    echo "Expected iOS app not found: ${ROOT_DIR}/ui/build/ios/iphoneos/Runner.app" >&2
+  if [[ ! -d "${ROOT_DIR}/app/build/ios/iphoneos/Runner.app" ]]; then
+    echo "Expected iOS app not found: ${ROOT_DIR}/app/build/ios/iphoneos/Runner.app" >&2
     exit 1
   fi
 
   local app_zip
-  app_zip="${out_dir}/${APP_NAME}-flutter-unsigned-app-v${version}-ios-${MODE}-${host_platform}.zip"
+  app_zip="${out_dir}/${APP_NAME}-unsigned-app-v${version}-ios-${MODE}-${host_platform}.zip"
   rm -f "${app_zip}"
-  (cd "${ROOT_DIR}/ui/build/ios/iphoneos" && zip -qry "${app_zip}" Runner.app)
+  (cd "${ROOT_DIR}/app/build/ios/iphoneos" && zip -qry "${app_zip}" Runner.app)
   echo "Built ${app_zip}"
+  write_checksum "${app_zip}"
 }
 
 target="${1:-all}"
@@ -201,17 +182,12 @@ case "${target}" in
     require_flutter
     build_apk
     ;;
-  web)
-    require_flutter
-    build_web
-    ;;
   ios)
     require_flutter
     build_ios
     ;;
   all)
     require_flutter
-    build_web
     build_apk
     build_ios
     ;;

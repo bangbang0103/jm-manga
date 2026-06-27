@@ -33,25 +33,22 @@ opencode.json
 
 # Data
 /data/
-server/data/
-server/web/
-server/dist
 *.db
 *.sqlite
 *.sqlite3
 
 # Flutter
-ui/.dart_tool/
-ui/.flutter-plugins
-ui/.flutter-plugins-dependencies
-ui/.packages
-ui/build/
-ui/ios/Pods/
-ui/ios/.symlinks/
-ui/android/.gradle/
-ui/android/app/debug/
-ui/android/app/profile/
-ui/android/app/release/
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.packages
+app/build/
+app/ios/Pods/
+app/ios/.symlinks/
+app/android/.gradle/
+app/android/app/debug/
+app/android/app/profile/
+app/android/app/release/
 
 # IDE
 .idea/
@@ -63,3 +60,6 @@ ui/android/app/release/
 # OS
 .DS_Store
 Thumbs.db
+
+# local jm sdk example
+repos

@@ -15,7 +15,7 @@ if [[ ! "${version}" =~ ^[0-9]+[.][0-9]+[.][0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
   exit 2
 fi
 
-pubspec="${ROOT_DIR}/ui/pubspec.yaml"
+pubspec="${ROOT_DIR}/app/pubspec.yaml"
 current_pubspec_version="$(awk '/^version:/ {print $2; exit}' "${pubspec}")"
 build_number="1"
 if [[ "${current_pubspec_version}" == *+* ]]; then
@@ -24,14 +24,6 @@ fi
 
 export JM_MANGA_VERSION="${version}"
 export JM_MANGA_FLUTTER_VERSION="${version}+${build_number}"
-
-LC_ALL=C LC_CTYPE=C LANG=C perl -0pi -e \
-  's/^version = ".*"$/version = "$ENV{JM_MANGA_VERSION}"/m' \
-  "${ROOT_DIR}/server/pyproject.toml"
-
-LC_ALL=C LC_CTYPE=C LANG=C perl -0pi -e \
-  's/^VERSION = ".*"$/VERSION = "$ENV{JM_MANGA_VERSION}"/m' \
-  "${ROOT_DIR}/server/src/jm_manga_server/version.py"
 
 LC_ALL=C LC_CTYPE=C LANG=C perl -0pi -e \
   's/^version: .+$/version: $ENV{JM_MANGA_FLUTTER_VERSION}/m' \

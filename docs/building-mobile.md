@@ -1,163 +1,105 @@
 # 移动端打包指南
 
-> 当前 Flutter 工程已配置好 Android 包名 `com.jmmanga.app`，iOS/macOS 工程位于 `ui/ios/` / `ui/macos/`。
+> 当前 Flutter 工程仅构建 iOS 与 Android 安装包。
+> 工程已配置好 Android 包名 `com.jmmanga.app`，iOS 工程位于 `app/ios/`。
 
-## 统一构建脚本
+## 统一脚本
 
-仓库根目录提供统一构建入口，产物会复制到根目录 `build/`：
+推荐使用仓库根目录的 `scripts/build.sh`：
 
 ```bash
+# Android APK
 ./scripts/build.sh apk
+
+# iOS 未签名 IPA
 ./scripts/build.sh ios
-./scripts/build.sh flutter
+
+# APK + IPA
+./scripts/build.sh all
 ```
 
-产物位置：
+输出产物位于 `build/`，每个文件附带 `.sha256` 校验文件：
 
-- APK：`build/jm-manga-flutter-apk-v<version>-android-<mode>.apk`
-- iOS unsigned IPA：`build/jm-manga-flutter-unsigned-ipa-v<version>-ios-<mode>.ipa`
-- iOS unsigned app zip：`build/jm-manga-flutter-unsigned-app-v<version>-ios-<mode>-<host-platform>.zip`
+```text
+build/jm-manga-apk-v0.1.0+1-android-release.apk
+build/jm-manga-apk-v0.1.0+1-android-release.apk.sha256
+build/jm-manga-unsigned-ipa-v0.1.0+1-ios-release.ipa
+build/jm-manga-unsigned-ipa-v0.1.0+1-ios-release.ipa.sha256
+```
 
-`ios` 构建需要 macOS + Xcode；脚本始终使用 `--no-codesign`，默认产出文件名带 `unsigned` 的 IPA。脚本不会读取你的 Apple Team、证书或 Provisioning Profile，签名位置留空，交给后续手动或 CI 重签流程处理。未签名 IPA 不能直接安装到 iPhone。
-
-## 通用前置
+可以通过环境变量覆盖产物名前缀：
 
 ```bash
-cd ui
-flutter pub get
-flutter analyze --fatal-infos
+APP_NAME=my-app ./scripts/build.sh apk
 ```
 
 ## Android
 
-### 1. 检查 Android 环境
+### 环境要求
+
+- Flutter SDK
+- Android SDK（包含命令行工具、platform-tools、build-tools）
+- 已接受 Android SDK licenses
+
+### 构建步骤
 
 ```bash
-flutter doctor --android-licenses   # 接受 SDK 许可证
-flutter doctor -v                    # 确认 Android toolchain 无 ×
+flutter build apk --release
 ```
 
-> 当前环境缺少 `cmdline-tools` 时，需从 Android Studio 或[官网命令行工具](https://developer.android.com/studio#command-line-tools-only)安装并放到 `$ANDROID_HOME/cmdline-tools/latest/`。
+构建产物默认位于 `app/build/app/outputs/flutter-apk/app-release.apk`。
 
-### 2. 调试 APK
+使用仓库脚本：
 
 ```bash
-flutter build apk --debug
+./scripts/build.sh apk
 ```
-
-产物：`ui/build/app/outputs/flutter-apk/app-debug.apk`
-
-### 3. Release APK / AAB
-
-Release 包需要签名。工程已支持从 `android/key.properties` 读取正式签名，未配置时自动回退 debug 签名。
-
-#### 方式 A：临时生成测试签名（本地测试）
-
-```bash
-cd ui/android
-keytool -genkey -v -keystore release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias jmrelease
-```
-
-创建 `ui/android/key.properties`：
-
-```properties
-storePassword=你的密钥库密码
-keyPassword=你的别名密码
-keyAlias=jmrelease
-storeFile=release-key.jks
-```
-
-然后打包：
-
-```bash
-cd ui
-flutter build apk --release        # APK
-flutter build appbundle --release  # Google Play 上架用 AAB
-```
-
-产物：
-
-- APK：`build/app/outputs/flutter-apk/app-release.apk`
-- AAB：`build/app/outputs/bundle/release/app-release.aab`
-
-#### 方式 B：CI / 正式环境
-
-把 `storeFile` 写成绝对路径，并把 keystore 文件放在 CI 安全存储中，不要提交到仓库。
 
 ## iOS
 
-### 1. 检查环境
+### 环境要求
+
+- macOS
+- Xcode 与命令行工具
+- Flutter SDK
+
+### 构建步骤
 
 ```bash
-flutter doctor -v
+flutter build ios --release --no-codesign
 ```
 
-需要 macOS + Xcode。构建脚本不要求登录 Apple Developer 账号。
-
-### 2. 无签名 IPA
-
-默认命令：
+使用仓库脚本可直接产出未签名 IPA：
 
 ```bash
 ./scripts/build.sh ios
 ```
 
-等价于：
+> 该 IPA 未签名，无法直接安装到设备。分发前需使用个人/企业证书重签。
+
+## 版本同步
+
+修改根目录 `VERSION` 后运行：
 
 ```bash
-IOS_EXPORT=unsigned-ipa ./scripts/build.sh ios
+./scripts/sync-version.sh
 ```
 
-产物：
+脚本会把版本同步到 `app/pubspec.yaml`，格式为 `<VERSION>+<build-number>`。
 
-```text
-build/jm-manga-flutter-unsigned-ipa-v<version>-ios-release.ipa
-```
+## 校验文件
 
-### 3. 签名位置
-
-签名不在构建脚本中完成。后续可以把 unsigned IPA 交给 CI、Xcode Organizer、`xcodebuild -exportArchive` 或其它签名流水线处理，在那里填写 Team、证书和 Provisioning Profile。
-
-### 4. 仅构建到 unsigned .app zip
+`scripts/build-flutter.sh` 会在每个产物生成后计算 SHA256，并写入同名的 `.sha256` 文件。校验方式：
 
 ```bash
-IOS_EXPORT=unsigned-app ./scripts/build.sh ios
+# Linux
+sha256sum -c build/jm-manga-apk-v0.1.0+1-android-release.apk.sha256
+
+# macOS
+shasum -a 256 -c build/jm-manga-unsigned-ipa-v0.1.0+1-ios-release.ipa.sha256
 ```
 
-产物：
+## 常见问题
 
-```text
-build/jm-manga-flutter-unsigned-app-v<version>-ios-release-macos-arm64.zip
-```
-
-## macOS（可选）
-
-```bash
-flutter build macos --release
-```
-
-产物：`build/macos/Build/Products/Release/JM Manga.app`
-
-## 快捷脚本
-
-可创建一个顶层脚本：
-
-```bash
-# scripts/build_android.sh
-#!/bin/bash
-set -e
-cd "$(dirname "$0")/../ui"
-flutter build apk --release
-ls -lh build/app/outputs/flutter-apk/app-release.apk
-```
-
-```bash
-# scripts/build_ios.sh
-#!/bin/bash
-set -e
-cd "$(dirname "$0")/.."
-IOS_EXPORT=unsigned-ipa ./scripts/build.sh ios
-ls -lh build/*unsigned-ipa*.ipa
-```
-
-记得 `chmod +x scripts/build_*.sh`。
+- iOS 构建失败提示 `flutter_secure_storage` 不支持 Swift Package Manager：目前仍可构建，未来 Flutter 升级后可能需要插件更新。
+- 构建产物目录 `build/` 与 `app/build/` 已加入 `.gitignore`，请勿提交。
