@@ -83,6 +83,18 @@ More documents:
 - [Architecture](docs/ARCHITECTURE.md)
 - [Mobile Packaging](docs/BUILDING-MOBILE.md)
 
+## Standing on the Shoulders of Giants
+
+This project could not exist without the following open-source projects and their maintainers:
+
+- [JMComic-Crawler-Python](https://github.com/hect0x7/JMComic-Crawler-Python) by [hect0x7](https://github.com/hect0x7)
+  - A Python API for JMComic that provides access to JM web and mobile interfaces, including login, search, image decoding, categories, rankings, favorites, and API encryption/decryption. It served as an essential reference for understanding JM's interface design.
+
+- [JMComic-qt](https://github.com/tonquer/JMComic-qt) by [tonquer](https://github.com/tonquer)
+  - A cross-platform desktop JMComic client built with Qt, implementing most JM features including reading and downloading. It inspired the overall feature set and user experience direction of this mobile app.
+
+Thank you to all the contributors of these projects for sharing their work with the community.
+
 ## License
 
 See [LICENSE](LICENSE).

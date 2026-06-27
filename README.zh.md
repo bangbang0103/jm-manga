@@ -83,6 +83,18 @@ flutter install
 - [架构说明](docs/ARCHITECTURE.md)
 - [移动端打包](docs/BUILDING-MOBILE.md)
 
+## 站在巨人的肩膀上
+
+本项目离不开以下开源项目及其维护者的贡献：
+
+- [JMComic-Crawler-Python](https://github.com/hect0x7/JMComic-Crawler-Python)（作者：[hect0x7](https://github.com/hect0x7)）
+- 一个针对 JMComic 的 Python API，支持访问 JM 的网页版及移动端接口，涵盖登录、搜索、图片解码、分类、排行榜、收藏以及 API 加解密等功能。它为理解 JM 的接口设计提供了重要参考。
+
+- [JMComic-qt](https://github.com/tonquer/JMComic-qt)（作者：[tonquer](https://github.com/tonquer)）
+- 一个基于 Qt 开发的跨平台 JMComic 桌面客户端，实现了包括阅读和下载在内的大部分 JM 功能。它为本移动端应用的功能规划和用户体验设计提供了灵感。
+
+感谢这些项目的贡献者与社区分享他们的成果。
+
 ## 许可证
 
 详见 [LICENSE](LICENSE)。
