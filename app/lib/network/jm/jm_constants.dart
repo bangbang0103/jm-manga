@@ -11,6 +11,13 @@ class JmConstants {
   static const scramble421926 = 421926;
 
   static const apiDomains = <String>[
+    // 2026-06-27 从 Android 缓存确认可用
+    'www.cdngwc.cc',
+    'www.cdnhjk.net',
+    'www.cdngwc.net',
+    'www.cdngwc.club',
+    'www.cdnutc.me',
+    // 历史 fallback，保留以备恢复
     'www.cdnaspa.club',
     'www.cdnaspa.vip',
     'www.cdnplaystation6.cc',
