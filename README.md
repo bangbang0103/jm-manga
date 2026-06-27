@@ -2,7 +2,7 @@
 
 # JM Manga
 
-![JM Manga icon](docs/assets/icon.png)
+<img src="docs/assets/icon.png" alt="JM Manga icon" width="120">
 
 A simple mobile manga reader app for iOS and Android. This project is built for personal learning and research purposes only.
 
