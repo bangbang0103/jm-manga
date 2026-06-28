@@ -932,6 +932,36 @@ abstract class AppLocalizations {
   /// **'FAQ'**
   String get aboutHelp;
 
+  /// No description provided for @newVersionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Version'**
+  String get newVersionTitle;
+
+  /// No description provided for @releaseNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Release Notes'**
+  String get releaseNotesLabel;
+
+  /// No description provided for @noReleaseNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'No release notes.'**
+  String get noReleaseNotes;
+
+  /// No description provided for @updateNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Download now'**
+  String get updateNow;
+
+  /// No description provided for @alreadyUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Already up to date'**
+  String get alreadyUpToDate;
+
   /// No description provided for @advancedSettingsTitle.
   ///
   /// In en, this message translates to:

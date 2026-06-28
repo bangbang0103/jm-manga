@@ -455,6 +455,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutHelp => 'FAQ';
 
   @override
+  String get newVersionTitle => 'New Version';
+
+  @override
+  String get releaseNotesLabel => 'Release Notes';
+
+  @override
+  String get noReleaseNotes => 'No release notes.';
+
+  @override
+  String get updateNow => 'Download now';
+
+  @override
+  String get alreadyUpToDate => 'Already up to date';
+
+  @override
   String get advancedSettingsTitle => 'Advanced';
 
   @override

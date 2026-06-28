@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:jm_manga/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/theme/app_shadows.dart';
 import '../providers/account_provider.dart';
 import '../providers/album_providers.dart';
 import '../providers/app_sync_provider.dart';
+import '../providers/app_update_provider.dart';
 import '../providers/library_signal_provider.dart';
 import 'home_screen.dart';
 import 'library_screen.dart';
@@ -33,6 +35,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     super.initState();
     _currentIndex = widget.initialIndex;
     _loadedIndexes = {_currentIndex};
+    _initUpdateCheck();
+  }
+
+  void _initUpdateCheck() {
+    unawaited(_checkForUpdates());
+  }
+
+  Future<void> _checkForUpdates() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final notifier = ref.read(appUpdateProvider.notifier);
+    notifier.setCurrentVersion(packageInfo.version);
+    await notifier.checkForUpdates(silent: true);
   }
 
   @override

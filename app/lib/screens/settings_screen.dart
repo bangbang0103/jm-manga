@@ -4,13 +4,16 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:jm_manga/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/app_update_info.dart';
 import '../models/jm_account.dart';
 import '../providers/account_provider.dart';
+import '../providers/app_update_provider.dart';
 import '../providers/config_provider.dart';
 import '../providers/device_provider.dart';
 import '../providers/repository_provider.dart';
@@ -287,11 +290,57 @@ class _AboutCard extends ConsumerWidget {
     return '${id.substring(0, 6)}...${id.substring(id.length - 6)}';
   }
 
+  Future<void> _openUpdateDetail(BuildContext context, AppUpdateInfo info) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => _UpdateDetailScreen(info: info),
+      ),
+    );
+  }
+
+  Future<void> _handleVersionTap(
+    BuildContext context,
+    WidgetRef ref,
+    AppUpdateState state,
+  ) async {
+    if (state.hasUpdate) {
+      await _openUpdateDetail(context, state.latestInfo!);
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final notifier = ref.read(appUpdateProvider.notifier);
+    await notifier.checkForUpdates(silent: false);
+
+    final updated = ref.read(appUpdateProvider);
+    if (!context.mounted) return;
+
+    if (updated.error != null) {
+      TopToast.show(
+        context,
+        mapErrorToUserMessage(updated.error!, l10n),
+        type: TopToastType.error,
+      );
+      return;
+    }
+
+    if (!updated.hasUpdate) {
+      TopToast.show(
+        context,
+        l10n.alreadyUpToDate,
+        type: TopToastType.success,
+      );
+    } else {
+      await _openUpdateDetail(context, updated.latestInfo!);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final id = deviceId;
+    final updateState = ref.watch(appUpdateProvider);
 
     return Card(
       child: Column(
@@ -302,15 +351,39 @@ class _AboutCard extends ConsumerWidget {
             trailing: FutureBuilder<PackageInfo>(
               future: PackageInfo.fromPlatform(),
               builder: (context, snapshot) {
+                if (updateState.isChecking) {
+                  return const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
+                }
                 final version = snapshot.data?.version ?? '...';
-                return Text(
-                  'v$version',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (updateState.hasUpdate) ...[
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Text(
+                      'v$version',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
+            onTap: () => _handleVersionTap(context, ref, updateState),
           ),
           if (id != null && id.isNotEmpty)
             ListTile(
@@ -364,6 +437,94 @@ class _AboutCard extends ConsumerWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _UpdateDetailScreen extends StatelessWidget {
+  final AppUpdateInfo info;
+
+  const _UpdateDetailScreen({required this.info});
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final notesEmpty = info.releaseNotes.trim().isEmpty;
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: Text(
+          l10n.newVersionTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton(
+              onPressed: () => _launchUrl(info.releaseUrl),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.primary,
+                textStyle: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              child: Text(l10n.updateNow),
+            ),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${info.version} - ${l10n.releaseNotesLabel}',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              Divider(color: theme.colorScheme.outlineVariant, height: 1),
+              const SizedBox(height: 16),
+              if (notesEmpty)
+                Center(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 32),
+                      Icon(
+                        Icons.notes_outlined,
+                        size: 48,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.noReleaseNotes,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                MarkdownBody(
+                  data: info.releaseNotes,
+                  selectable: true,
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -448,6 +448,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutHelp => '常见问题';
 
   @override
+  String get newVersionTitle => '新版本';
+
+  @override
+  String get releaseNotesLabel => '发布日志';
+
+  @override
+  String get noReleaseNotes => '暂无更新说明。';
+
+  @override
+  String get updateNow => '立即下载';
+
+  @override
+  String get alreadyUpToDate => '已是最新版本';
+
+  @override
   String get advancedSettingsTitle => '高级选项';
 
   @override
