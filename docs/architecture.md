@@ -79,6 +79,14 @@ JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS
 - 检测失败时自动检测静默；手动点击版本号失败时通过 `TopToast` 提示。
 - 检测到新版本后点击进入详情页，展示 release notes 并提供“立即下载”按钮跳转 GitHub Release 页面。
 
+## 自定义域名
+
+- 用户在 `Settings → Advanced → Custom Domain` 中分别设置多个 API 域名与图片域名，每行一个。
+- 输入支持域名、`IP:port` 或完整 URL；缺失 scheme 时自动补全 `https://`。
+- 配置以 JSON 列表持久化到 `SharedPreferences`，通过 `configProvider` 注入 `JmClient`。
+- `JmClient` 按输入顺序将所有自定义域名主机排在域名列表前部，依次优先尝试；失败时按原有机制回退到自动更新或内置域名。
+- 自定义域名可指定 `http` 与非标准端口，`JmImageService` 在回退到内置图片 CDN 时会切回 `https`。
+
 ## 图片与缓存
 
 - 图片通过 `JmImageService` 请求图片服务，支持重试与并发限制。

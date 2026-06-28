@@ -521,6 +521,71 @@ class AppLocalizationsZh extends AppLocalizations {
   String get proxyProtocolHint => '请确认 HTTP 代理支持 CONNECT 方法以转发 HTTPS 流量。';
 
   @override
+  String get customDomainTitle => '自定义域名';
+
+  @override
+  String get customDomainSubtitle => '自定义域名会优先使用；留空则走内置域名。';
+
+  @override
+  String get customDomainApiLabel => 'API 域名';
+
+  @override
+  String get customDomainImageLabel => '图片域名';
+
+  @override
+  String get customDomainHint => 'example.com 或 https://192.168.1.2:8080';
+
+  @override
+  String get customDomainTest => '测试全部连接';
+
+  @override
+  String get customDomainTestSuccess => '全部连接成功';
+
+  @override
+  String get customDomainTestFailed => '部分连接失败';
+
+  @override
+  String get customDomainNoDomainToTest => '没有可测试的域名';
+
+  @override
+  String get customDomainAddHint => '添加域名';
+
+  @override
+  String get customDomainEmpty => '没有自定义域名，请在下方添加。';
+
+  @override
+  String customDomainLatency(Object ms) {
+    return '$ms毫秒';
+  }
+
+  @override
+  String get customDomainLatencyFailed => '失败';
+
+  @override
+  String get customDomainAdded => '已添加';
+
+  @override
+  String get customDomainMoveUp => '上移';
+
+  @override
+  String get customDomainMoveDown => '下移';
+
+  @override
+  String get customDomainDelete => '删除';
+
+  @override
+  String get customDomainSaved => '已保存';
+
+  @override
+  String get customDomainCleared => '已清空';
+
+  @override
+  String get customDomainEnabled => '已启用';
+
+  @override
+  String get customDomainDisabled => '未启用';
+
+  @override
   String get actionSave => '保存';
 
   @override

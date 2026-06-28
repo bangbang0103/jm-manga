@@ -17,16 +17,32 @@ final autoUpdateJmDomainsProvider = Provider<bool>((ref) {
   );
 });
 
+final customApiDomainsProvider = Provider<List<String>>((ref) {
+  return ref.watch(
+    configProvider.select((config) => config.customApiDomains),
+  );
+});
+
+final customImageDomainsProvider = Provider<List<String>>((ref) {
+  return ref.watch(
+    configProvider.select((config) => config.customImageDomains),
+  );
+});
+
 final apiRepositoryProvider = Provider<MangaRepository>((ref) {
   final account = ref.watch(selectedAccountProvider);
   final ownerKey = ref.watch(ownerKeyProvider);
   final proxyUrl = ref.watch(proxyUrlProvider);
   final autoUpdateDomains = ref.watch(autoUpdateJmDomainsProvider);
+  final customApiDomains = ref.watch(customApiDomainsProvider);
+  final customImageDomains = ref.watch(customImageDomainsProvider);
 
   return DirectMangaRepository(
     client: JmClient(
       proxyUrl: proxyUrl,
       autoUpdateDomains: autoUpdateDomains,
+      customApiDomains: customApiDomains,
+      customImageDomains: customImageDomains,
     ),
     proxyUrl: proxyUrl,
     ownerKey: ownerKey,

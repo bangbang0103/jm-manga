@@ -532,6 +532,72 @@ class AppLocalizationsEn extends AppLocalizations {
       'Make sure the HTTP proxy supports the CONNECT method for HTTPS traffic.';
 
   @override
+  String get customDomainTitle => 'Custom Domain';
+
+  @override
+  String get customDomainSubtitle =>
+      'Custom domains take priority. Leave blank to use the built-in domains.';
+
+  @override
+  String get customDomainApiLabel => 'API Domains';
+
+  @override
+  String get customDomainImageLabel => 'Image Domains';
+
+  @override
+  String get customDomainHint => 'example.com or https://192.168.1.2:8080';
+
+  @override
+  String get customDomainTest => 'Test all connections';
+
+  @override
+  String get customDomainTestSuccess => 'All connections successful';
+
+  @override
+  String get customDomainTestFailed => 'Some connections failed';
+
+  @override
+  String get customDomainNoDomainToTest => 'No domain to test';
+
+  @override
+  String get customDomainAddHint => 'Add domain';
+
+  @override
+  String get customDomainEmpty => 'No custom domains. Add one below.';
+
+  @override
+  String customDomainLatency(Object ms) {
+    return '${ms}ms';
+  }
+
+  @override
+  String get customDomainLatencyFailed => 'Failed';
+
+  @override
+  String get customDomainAdded => 'Added';
+
+  @override
+  String get customDomainMoveUp => 'Move up';
+
+  @override
+  String get customDomainMoveDown => 'Move down';
+
+  @override
+  String get customDomainDelete => 'Delete';
+
+  @override
+  String get customDomainSaved => 'Saved';
+
+  @override
+  String get customDomainCleared => 'Cleared';
+
+  @override
+  String get customDomainEnabled => 'Enabled';
+
+  @override
+  String get customDomainDisabled => 'Disabled';
+
+  @override
   String get actionSave => 'Save';
 
   @override

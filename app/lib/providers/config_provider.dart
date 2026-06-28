@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/app_logger.dart';
+import '../utils/custom_domain_utils.dart';
 
 class AppConfig {
   final ThemeMode themeMode;
@@ -13,6 +16,8 @@ class AppConfig {
   final bool autoSelectJmDomain;
   final String? proxyUrl;
   final LogLevel logLevel;
+  final List<String> customApiDomains;
+  final List<String> customImageDomains;
 
   const AppConfig({
     this.themeMode = ThemeMode.system,
@@ -22,6 +27,8 @@ class AppConfig {
     this.autoSelectJmDomain = true,
     this.proxyUrl,
     this.logLevel = kDebugMode ? LogLevel.debug : LogLevel.info,
+    this.customApiDomains = const <String>[],
+    this.customImageDomains = const <String>[],
   });
 
   AppConfig copyWith({
@@ -32,7 +39,11 @@ class AppConfig {
     bool? autoSelectJmDomain,
     String? proxyUrl,
     LogLevel? logLevel,
+    List<String>? customApiDomains,
+    List<String>? customImageDomains,
     bool clearProxyUrl = false,
+    bool clearCustomApiDomains = false,
+    bool clearCustomImageDomains = false,
   }) {
     return AppConfig(
       themeMode: themeMode ?? this.themeMode,
@@ -42,6 +53,12 @@ class AppConfig {
       autoSelectJmDomain: autoSelectJmDomain ?? this.autoSelectJmDomain,
       proxyUrl: clearProxyUrl ? null : (proxyUrl ?? this.proxyUrl),
       logLevel: logLevel ?? this.logLevel,
+      customApiDomains: clearCustomApiDomains
+          ? const <String>[]
+          : (customApiDomains ?? this.customApiDomains),
+      customImageDomains: clearCustomImageDomains
+          ? const <String>[]
+          : (customImageDomains ?? this.customImageDomains),
     );
   }
 }
@@ -54,6 +71,8 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
   static const _autoSelectJmDomainKey = 'autoSelectJmDomain';
   static const _proxyUrlKey = 'proxyUrl';
   static const _logLevelKey = 'logLevel';
+  static const _customApiDomainsKey = 'customApiDomains';
+  static const _customImageDomainsKey = 'customImageDomains';
 
   ConfigNotifier() : super(const AppConfig()) {
     load();
@@ -109,6 +128,20 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
     };
   }
 
+  static List<String> _decodeStringList(String? value) {
+    if (value == null || value.isEmpty) return const <String>[];
+    try {
+      final decoded = jsonDecode(value) as List<dynamic>;
+      return decoded.whereType<String>().toList();
+    } catch (_) {
+      return const <String>[];
+    }
+  }
+
+  static String _encodeStringList(List<String> list) {
+    return jsonEncode(list);
+  }
+
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final preloadCount = prefs.getInt(_preloadCountKey);
@@ -118,6 +151,12 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
     final autoSelectJmDomain = prefs.getBool(_autoSelectJmDomainKey);
     final proxyUrl = prefs.getString(_proxyUrlKey);
     final logLevel = _parseLogLevel(prefs.getString(_logLevelKey));
+    final customApiDomains = _decodeStringList(
+      prefs.getString(_customApiDomainsKey),
+    );
+    final customImageDomains = _decodeStringList(
+      prefs.getString(_customImageDomainsKey),
+    );
 
     globalLogger.minLevel = logLevel;
 
@@ -131,6 +170,8 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
       autoSelectJmDomain: autoSelectJmDomain ?? state.autoSelectJmDomain,
       proxyUrl: proxyUrl,
       logLevel: logLevel,
+      customApiDomains: customApiDomains,
+      customImageDomains: customImageDomains,
     );
   }
 
@@ -179,6 +220,52 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
     state = state.copyWith(logLevel: level);
   }
 
+  Future<void> setCustomApiDomains(List<String> domains) async {
+    final normalized = <String>[];
+    for (final domain in domains) {
+      final trimmed = domain.trim();
+      if (trimmed.isEmpty) continue;
+      final result = CustomDomainUtils.parse(trimmed);
+      if (result.uri == null) {
+        throw ArgumentError(result.error ?? 'Invalid domain: $trimmed');
+      }
+      normalized.add(result.uri.toString());
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    if (normalized.isEmpty) {
+      await prefs.remove(_customApiDomainsKey);
+      state = state.copyWith(clearCustomApiDomains: true);
+    } else {
+      await prefs.setString(_customApiDomainsKey, _encodeStringList(normalized));
+      state = state.copyWith(customApiDomains: normalized);
+    }
+  }
+
+  Future<void> setCustomImageDomains(List<String> domains) async {
+    final normalized = <String>[];
+    for (final domain in domains) {
+      final trimmed = domain.trim();
+      if (trimmed.isEmpty) continue;
+      final result = CustomDomainUtils.parse(trimmed);
+      if (result.uri == null) {
+        throw ArgumentError(result.error ?? 'Invalid domain: $trimmed');
+      }
+      normalized.add(result.uri.toString());
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    if (normalized.isEmpty) {
+      await prefs.remove(_customImageDomainsKey);
+      state = state.copyWith(clearCustomImageDomains: true);
+    } else {
+      await prefs.setString(
+        _customImageDomainsKey,
+        _encodeStringList(normalized),
+      );
+      state = state.copyWith(customImageDomains: normalized);
+    }
+  }
 }
 
 final configProvider = StateNotifierProvider<ConfigNotifier, AppConfig>((ref) {

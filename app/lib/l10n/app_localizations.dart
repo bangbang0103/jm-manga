@@ -1076,6 +1076,132 @@ abstract class AppLocalizations {
   /// **'Make sure the HTTP proxy supports the CONNECT method for HTTPS traffic.'**
   String get proxyProtocolHint;
 
+  /// No description provided for @customDomainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Domain'**
+  String get customDomainTitle;
+
+  /// No description provided for @customDomainSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom domains take priority. Leave blank to use the built-in domains.'**
+  String get customDomainSubtitle;
+
+  /// No description provided for @customDomainApiLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'API Domains'**
+  String get customDomainApiLabel;
+
+  /// No description provided for @customDomainImageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Image Domains'**
+  String get customDomainImageLabel;
+
+  /// No description provided for @customDomainHint.
+  ///
+  /// In en, this message translates to:
+  /// **'example.com or https://192.168.1.2:8080'**
+  String get customDomainHint;
+
+  /// No description provided for @customDomainTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Test all connections'**
+  String get customDomainTest;
+
+  /// No description provided for @customDomainTestSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'All connections successful'**
+  String get customDomainTestSuccess;
+
+  /// No description provided for @customDomainTestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Some connections failed'**
+  String get customDomainTestFailed;
+
+  /// No description provided for @customDomainNoDomainToTest.
+  ///
+  /// In en, this message translates to:
+  /// **'No domain to test'**
+  String get customDomainNoDomainToTest;
+
+  /// No description provided for @customDomainAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add domain'**
+  String get customDomainAddHint;
+
+  /// No description provided for @customDomainEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No custom domains. Add one below.'**
+  String get customDomainEmpty;
+
+  /// No description provided for @customDomainLatency.
+  ///
+  /// In en, this message translates to:
+  /// **'{ms}ms'**
+  String customDomainLatency(Object ms);
+
+  /// No description provided for @customDomainLatencyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get customDomainLatencyFailed;
+
+  /// No description provided for @customDomainAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get customDomainAdded;
+
+  /// No description provided for @customDomainMoveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get customDomainMoveUp;
+
+  /// No description provided for @customDomainMoveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get customDomainMoveDown;
+
+  /// No description provided for @customDomainDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get customDomainDelete;
+
+  /// No description provided for @customDomainSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get customDomainSaved;
+
+  /// No description provided for @customDomainCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleared'**
+  String get customDomainCleared;
+
+  /// No description provided for @customDomainEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get customDomainEnabled;
+
+  /// No description provided for @customDomainDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get customDomainDisabled;
+
   /// No description provided for @actionSave.
   ///
   /// In en, this message translates to:

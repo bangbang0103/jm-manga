@@ -214,7 +214,7 @@ class JmImageService {
         final host = preferred.host;
         try {
           final bytes = await _fetchWithRetry(
-            uri.replace(host: host),
+            _uriForImageDomain(uri, host),
             maxRetries: 1,
           );
           _recordSuccess(host);
@@ -277,7 +277,7 @@ class JmImageService {
     for (final domain in domains) {
       try {
         final bytes = await _fetchWithRetry(
-          uri.replace(host: domain),
+          _uriForImageDomain(uri, domain),
           maxRetries: 1,
         );
         if (bytes.isNotEmpty) {
@@ -322,7 +322,7 @@ class JmImageService {
       final futures = batch.map((domain) {
         final token = CancelToken();
         tokens.add(token);
-        final uri = originalUri.replace(host: domain);
+        final uri = _uriForImageDomain(originalUri, domain);
         return _fetchOne(uri, cancelToken: token, receiveTimeoutMs: 8000)
             .then<({Uint8List bytes, String host})?>((bytes) {
               if (bytes.isNotEmpty) {
@@ -362,6 +362,17 @@ class JmImageService {
 
   bool _isKnownImageHost(String host) {
     return _client?.imageDomains.contains(host) ?? false;
+  }
+
+  Uri _uriForImageDomain(Uri original, String domain) {
+    if (_client?.customImageHosts.contains(domain) ?? false) return original;
+    return Uri(
+      scheme: 'https',
+      host: domain,
+      path: original.path,
+      queryParameters:
+          original.queryParameters.isEmpty ? null : original.queryParameters,
+    );
   }
 
   Future<Uint8List> _fetchOne(

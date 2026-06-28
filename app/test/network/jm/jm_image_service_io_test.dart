@@ -111,4 +111,100 @@ void main() {
       expect(second, equals(Uint8List.fromList([2])));
     });
   });
+
+  group('JmImageService custom domain', () {
+    test('recognizes custom image host and falls back to https auto domains', () async {
+      final client = JmClient(
+        domains: const JmDomainConfig(
+          apiDomains: ['api.test'],
+          imageDomains: ['cdn-auto.test'],
+        ),
+        autoUpdateDomains: false,
+        customImageDomains: const ['http://img.local:3000'],
+      );
+
+      final requestedUris = <Uri>[];
+      final dio = Dio();
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            requestedUris.add(options.uri);
+            final host = options.uri.host;
+            if (host == 'img.local') {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  type: DioExceptionType.connectionError,
+                ),
+              );
+              return;
+            }
+            handler.resolve(
+              Response<dynamic>(
+                requestOptions: options,
+                data: <int>[1],
+                statusCode: 200,
+              ),
+            );
+          },
+        ),
+      );
+
+      final service = JmImageService(
+        dio: dio,
+        client: client,
+        cache: _MemoryImageCache(),
+      );
+
+      await service.loadDecodedBytes(
+        'http://img.local:3000/media/albums/200.jpg',
+      );
+
+      expect(requestedUris.length, greaterThanOrEqualTo(2));
+      final first = requestedUris.first;
+      expect(first.scheme, 'http');
+      expect(first.host, 'img.local');
+      expect(first.port, 3000);
+
+      final fallback = requestedUris.lastWhere(
+        (u) => u.host == 'cdn-auto.test',
+      );
+      expect(fallback.scheme, 'https');
+      expect(fallback.port, 443);
+    });
+
+    test('uses custom image domain directly when it succeeds', () async {
+      final client = JmClient(
+        autoUpdateDomains: false,
+        customImageDomains: const ['https://img.custom.test'],
+      );
+
+      final dio = Dio();
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.resolve(
+              Response<dynamic>(
+                requestOptions: options,
+                data: <int>[1],
+                statusCode: 200,
+              ),
+            );
+          },
+        ),
+      );
+
+      final service = JmImageService(
+        dio: dio,
+        client: client,
+        cache: _MemoryImageCache(),
+      );
+
+      final bytes = await service.loadDecodedBytes(
+        'https://img.custom.test/media/albums/201.jpg',
+      );
+
+      expect(bytes, equals(Uint8List.fromList([1])));
+    });
+  });
 }

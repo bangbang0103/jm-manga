@@ -36,12 +36,20 @@ class JmClient {
   int _imageDomainIndex = 0;
   bool _domainsUpdated = false;
   Future<void>? _domainUpdateFuture;
+  final List<Uri> _customApiUris;
+  final List<Uri> _customImageUris;
 
   JmDomainConfig get domains => _currentDomainConfig();
 
   List<String> get apiDomains => _apiDomains;
 
   List<String> get imageDomains => _imageDomains;
+
+  Set<String> get customApiHosts =>
+      _customApiUris.map((u) => u.host).toSet();
+
+  Set<String> get customImageHosts =>
+      _customImageUris.map((u) => u.host).toSet();
 
   int get currentApiDomainIndex => _apiDomainIndex;
 
@@ -55,22 +63,34 @@ class JmClient {
     Dio? dio,
     JmDomainConfig? domains,
     TimestampProvider? timestampProvider,
-    this._domainUpdater,
+    JmDomainUpdater? domainUpdater,
     bool autoUpdateDomains = true,
     String? proxyUrl,
+    List<String> customApiDomains = const <String>[],
+    List<String> customImageDomains = const <String>[],
   }) : dio = dio ?? Dio(),
        timestampProvider =
            timestampProvider ??
            (() => DateTime.now().millisecondsSinceEpoch ~/ 1000),
+       // ignore: prefer_initializing_formals
+       _domainUpdater = domainUpdater,
        // Keep the public API name readable while storing the private flag.
        // ignore: prefer_initializing_formals
        _autoUpdateDomains = autoUpdateDomains,
-       _apiDomains = List.unmodifiable(
-         domains?.apiDomains ?? JmConstants.apiDomains,
+       _customApiUris = List.unmodifiable(
+         customApiDomains.map(Uri.parse).toList(),
        ),
-       _imageDomains = List.unmodifiable(
-         domains?.imageDomains ?? JmConstants.imageDomains,
-       ) {
+       _customImageUris = List.unmodifiable(
+         customImageDomains.map(Uri.parse).toList(),
+       ),
+       _apiDomains = List.unmodifiable([
+         ...customApiDomains.map(Uri.parse).map((u) => u.host),
+         ...(domains?.apiDomains ?? JmConstants.apiDomains),
+       ]),
+       _imageDomains = List.unmodifiable([
+         ...customImageDomains.map(Uri.parse).map((u) => u.host),
+         ...(domains?.imageDomains ?? JmConstants.imageDomains),
+       ]) {
     this.dio.interceptors.add(_JmLoggingInterceptor());
     // 尽量复用连接：长连接 + 合理超时。
     this.dio.options = this.dio.options.copyWith(
@@ -111,21 +131,57 @@ class JmClient {
 
   void _applyDomainConfig(JmDomainConfig config) {
     if (config.apiDomains.isNotEmpty) {
-      _apiDomains = List.unmodifiable(config.apiDomains);
+      _apiDomains = List.unmodifiable([
+        ..._customApiUris.map((u) => u.host),
+        ...config.apiDomains,
+      ]);
       _apiDomainIndex = 0;
     }
     if (config.imageDomains.isNotEmpty) {
-      _imageDomains = List.unmodifiable(config.imageDomains);
+      _imageDomains = List.unmodifiable([
+        ..._customImageUris.map((u) => u.host),
+        ...config.imageDomains,
+      ]);
       _imageDomainIndex = 0;
     }
   }
 
   JmDomainConfig _currentDomainConfig() {
+    final apiScheme =
+        _apiDomainIndex < _customApiUris.length
+            ? _customApiUris[_apiDomainIndex].scheme
+            : 'https';
     return JmDomainConfig(
       apiDomains: [_apiDomains[_apiDomainIndex]],
       imageDomains: [_imageDomains[_imageDomainIndex]],
-      scheme: 'https',
+      scheme: apiScheme,
     );
+  }
+
+  Uri _buildApiUri(
+    String path, {
+    Map<String, Object?> queryParameters = const {},
+  }) {
+    if (_apiDomainIndex < _customApiUris.length) {
+      return _customApiUris[_apiDomainIndex].replace(
+        path: path,
+        queryParameters: JmDomainConfig.cleanQuery(queryParameters),
+      );
+    }
+    return domains.apiUri(path, queryParameters: queryParameters);
+  }
+
+  String _buildImageUrl(
+    String path, {
+    Map<String, Object?> queryParameters = const {},
+  }) {
+    if (_imageDomainIndex < _customImageUris.length) {
+      return _customImageUris[_imageDomainIndex].replace(
+        path: path,
+        queryParameters: JmDomainConfig.cleanQuery(queryParameters),
+      ).toString();
+    }
+    return domains.imageUri(path, queryParameters: queryParameters).toString();
   }
 
   bool _canSwitchApiDomain() => _apiDomainIndex + 1 < _apiDomains.length;
@@ -176,7 +232,7 @@ class JmClient {
   }
 
   Uri uriFor(String path, {Map<String, Object?> queryParameters = const {}}) {
-    return domains.apiUri(path, queryParameters: queryParameters);
+    return _buildApiUri(path, queryParameters: queryParameters);
   }
 
   Future<JmSearchPage> search(String query, {int page = 1}) async {
@@ -279,16 +335,14 @@ class JmClient {
   }
 
   String coverUrl(String albumId, {String size = ''}) {
-    return domains.imageUri('/media/albums/$albumId$size.jpg').toString();
+    return _buildImageUrl('/media/albums/$albumId$size.jpg');
   }
 
   String imageUrl(String photoId, String imageName, {int? scrambleId}) {
-    return domains
-        .imageUri(
-          '/media/photos/$photoId/$imageName',
-          queryParameters: {'scramble_id': ?scrambleId},
-        )
-        .toString();
+    return _buildImageUrl(
+      '/media/photos/$photoId/$imageName',
+      queryParameters: {'scramble_id': ?scrambleId},
+    );
   }
 
   Future<String> getScramblePage(String chapterId) async {

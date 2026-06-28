@@ -17,7 +17,7 @@ class JmDomainConfig {
       scheme: scheme,
       host: apiDomains.first,
       path: normalizedPath,
-      queryParameters: _cleanQuery(queryParameters),
+      queryParameters: cleanQuery(queryParameters),
     );
   }
 
@@ -27,11 +27,11 @@ class JmDomainConfig {
       scheme: scheme,
       host: imageDomains.first,
       path: normalizedPath,
-      queryParameters: _cleanQuery(queryParameters),
+      queryParameters: cleanQuery(queryParameters),
     );
   }
 
-  static Map<String, String>? _cleanQuery(Map<String, Object?> params) {
+  static Map<String, String>? cleanQuery(Map<String, Object?> params) {
     final query = <String, String>{};
     for (final entry in params.entries) {
       final value = entry.value;
