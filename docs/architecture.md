@@ -5,7 +5,7 @@
 JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS 与 Android。
 
 - **前端**：Flutter 客户端直接请求数据源接口与图片服务。
-- **本地存储**：`SecureStorage` 保存账号凭据和会话凭证；SQLite 保存收藏与阅读进度；SharedPreferences 保存代理、日志级别、主题、语言、图片缓存 LRU 元数据等非敏感配置。搜索历史当前未持久化。
+- **本地存储**：`SecureStorage` 保存账号凭据和会话凭证；SQLite 保存收藏与阅读进度；SharedPreferences 保存代理、日志级别、主题、语言、搜索历史、图片缓存 LRU 元数据等非敏感配置。
 - **发布**：直接构建 APK/IPA 后安装即可使用。
 
 
@@ -28,9 +28,10 @@ JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS
 - `lib/data/`：repository、数据映射与业务服务（如收藏服务）。
 - `lib/models/`：数据模型。
 - `lib/network/`：网络层，包含 HTTP 代理覆盖、代理配置、错误映射，以及 `network/jm/` 子目录下的 JM 数据源 client、常量、加密、域名、图片服务与解码。
+- `lib/services/`：面向远端第三方服务的封装（如 GitHub Releases 更新检测）。
 - `lib/local/`：本地 records 管理（基于 SQLite）。
 - `lib/l10n/`：本地化 ARB 与 generated 文件。
-- `lib/providers/`：Riverpod 状态，包含账号、配置、列表和同步信号。
+- `lib/providers/`：Riverpod 状态，包含账号、配置、列表、同步信号、搜索历史与应用更新检测。
 - `lib/screens/`：主页面、搜索、排行榜、书架、详情、阅读器、设置、缓存、日志、代理设置、高级选项等。
 - `lib/utils/`：日志、存储、缓存清理、图片下载、收藏动作、Toast 等工具。
 - `lib/widgets/`：通用 UI 组件。
@@ -69,6 +70,14 @@ JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS
 
 - 按 `jm_username + album_id + photo_id` 归属（已登录账号）。
 - 未选择 JM 账号时，按 `device_id + album_id + photo_id` 归属。
+
+## 应用更新检测
+
+- `AppUpdateService` 调用 GitHub Releases API（`repos/{owner}/{repo}/releases/latest`）获取最新 release。
+- `AppUpdateNotifier` 在 `MainScreen` 初始化时自动静默检测，并在设置页版本号入口展示红点提示。
+- 版本比较按 semver（`major.minor.patch`）进行，忽略 Flutter build number。
+- 检测失败时自动检测静默；手动点击版本号失败时通过 `TopToast` 提示。
+- 检测到新版本后点击进入详情页，展示 release notes 并提供“立即下载”按钮跳转 GitHub Release 页面。
 
 ## 图片与缓存
 

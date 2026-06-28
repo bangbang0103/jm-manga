@@ -17,6 +17,7 @@ app/
       error_mapper.dart      错误映射
     providers/               Riverpod 状态管理
     screens/                 页面
+    services/                面向远端第三方服务的封装
     utils/                   日志、存储、缓存清理、图片下载等工具
     widgets/                 通用 UI 组件
   test/                      Flutter 测试（目录与 lib/ 对应）
@@ -27,10 +28,14 @@ scripts/
   build.sh                   统一构建入口（apk / ios / all）
   build-flutter.sh           Flutter 构建与 sha256 校验
   sync-version.sh            将根 VERSION 同步到 pubspec.yaml
+  test-flutter.sh            运行 Flutter 测试（自动设置 NO_PROXY）
 
 docs/
   ARCHITECTURE.md            架构说明
   BUILDING-MOBILE.md         移动端构建说明
+  CODEBASE.md                代码导航
+  DEVELOPMENT.md             开发指南
+  DESIGN.md                  设计系统
   research/                  接口探测资料
 ```
 
