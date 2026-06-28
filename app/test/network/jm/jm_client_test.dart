@@ -130,6 +130,29 @@ void main() {
       expect(toggleRequest.data, {'aid': '123'});
       expect(toggleRequest.headers['Cookie'], 'AVS=session-token');
     });
+
+    test('cycles through custom API domains then falls back to official', () async {
+      final adapter = _ConditionalApiAdapter(
+        failHosts: const {'api.local'},
+        successData: _favoriteData,
+      );
+      final client = JmClient(
+        dio: Dio()..httpClientAdapter = adapter,
+        domains: const JmDomainConfig(apiDomains: ['fallback.test']),
+        customApiDomains: const ['http://api.local:8080'],
+        timestampProvider: () => 1700566805,
+        autoUpdateDomains: false,
+      );
+
+      // Custom domain fails, then fallback succeeds.
+      final result = await client.getFavoritePage(page: 1);
+      expect(result.items, isNotEmpty);
+
+      expect(adapter.requests.length, 2);
+      expect(adapter.requests.first.uri.host, 'api.local');
+      expect(adapter.requests.first.uri.port, 8080);
+      expect(adapter.requests.last.uri.host, 'fallback.test');
+    });
   });
 }
 
@@ -176,6 +199,34 @@ class RecordingAdapter implements HttpClientAdapter {
       jsonEncode({'code': 200, 'data': response.encryptedData}),
       200,
       headers: response.headers,
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _ConditionalApiAdapter implements HttpClientAdapter {
+  final Set<String> failHosts;
+  final String successData;
+  final List<RequestOptions> requests = [];
+
+  _ConditionalApiAdapter({required this.failHosts, required this.successData});
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requests.add(options);
+    if (failHosts.contains(options.uri.host)) {
+      return ResponseBody.fromString('', 502, headers: {});
+    }
+    return ResponseBody.fromString(
+      jsonEncode({'code': 200, 'data': successData}),
+      200,
+      headers: {},
     );
   }
 

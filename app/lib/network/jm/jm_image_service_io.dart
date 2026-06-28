@@ -303,16 +303,11 @@ class JmImageService {
     return 'default';
   }
 
-  /// 对同一个图片在可用图片域名之间分批并发赛马，每批 [_raceBatchSize] 个。
-  /// 取第一个成功且非空的响应，降低瞬时并发量。
-  Future<({Uint8List bytes, String host})> _raceImageDomains(
+  /// 对 [domains] 分批并发赛马，取第一个成功且非空的响应。
+  Future<({Uint8List bytes, String host})> _raceDomainBatches(
     Uri originalUri,
+    List<String> domains,
   ) async {
-    final domains = _availableImageDomains();
-    if (domains.isEmpty) {
-      throw StateError('JM image domains are empty or all in backoff');
-    }
-
     for (var i = 0; i < domains.length; i += _raceBatchSize) {
       final batch = domains.sublist(
         i,
@@ -356,7 +351,46 @@ class JmImageService {
     }
 
     throw StateError(
-      'JM image download failed on all domains: ${domains.join(", ")}',
+      'JM image download failed on domains: ${domains.join(", ")}',
+    );
+  }
+
+  /// 对同一个图片在可用图片域名之间分批并发赛马，每批 [_raceBatchSize] 个。
+  /// 取第一个成功且非空的响应，降低瞬时并发量。
+  /// 当用户配置了自定义图片域名时，优先只在自定义域名间赛马；全部失败后再回退到官方 CDN。
+  Future<({Uint8List bytes, String host})> _raceImageDomains(
+    Uri originalUri,
+  ) async {
+    final allDomains = _availableImageDomains();
+    if (allDomains.isEmpty) {
+      throw StateError('JM image domains are empty or all in backoff');
+    }
+
+    final customHosts = _client?.customImageHosts ?? const <String>{};
+    final customDomains =
+        allDomains.where((d) => customHosts.contains(d)).toList();
+    final officialDomains =
+        allDomains.where((d) => !customHosts.contains(d)).toList();
+
+    // 优先在自定义图片域名之间赛马。
+    if (customDomains.isNotEmpty) {
+      try {
+        return await _raceDomainBatches(originalUri, customDomains);
+      } catch (_) {
+        globalLogger.w(
+          'JM IMG custom domains failed for ${originalUri.path}, '
+          'falling back to official CDN',
+        );
+      }
+    }
+
+    // 自定义域名全部失败或不可用时，回退到官方 CDN。
+    if (officialDomains.isNotEmpty) {
+      return await _raceDomainBatches(originalUri, officialDomains);
+    }
+
+    throw StateError(
+      'JM image download failed on all domains: ${allDomains.join(", ")}',
     );
   }
 
@@ -365,7 +399,14 @@ class JmImageService {
   }
 
   Uri _uriForImageDomain(Uri original, String domain) {
-    if (_client?.customImageHosts.contains(domain) ?? false) return original;
+    final customUri = _client?.customImageUriByHost[domain];
+    if (customUri != null) {
+      return customUri.replace(
+        path: original.path,
+        queryParameters:
+            original.queryParameters.isEmpty ? null : original.queryParameters,
+      );
+    }
     return Uri(
       scheme: 'https',
       host: domain,

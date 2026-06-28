@@ -14,7 +14,7 @@ class _FakeDomainUpdater extends JmDomainUpdater {
 
 void main() {
   group('JmClient custom domains', () {
-    test('prepends custom API domains and uses the first for API requests', () {
+    test('uses custom API domains first and keeps official fallback', () {
       final client = JmClient(
         autoUpdateDomains: false,
         customApiDomains: const ['https://api.custom.test'],
@@ -41,18 +41,18 @@ void main() {
       expect(uri.port, 8080);
     });
 
-    test('falls back to built-in domains after switching away from custom', () {
+    test('keeps custom API domains first and official fallback after switching', () {
       final client = JmClient(
         autoUpdateDomains: false,
         domains: const JmDomainConfig(apiDomains: ['fallback.test']),
         customApiDomains: const ['https://api.custom.test'],
       );
 
-      expect(client.apiDomains.first, 'api.custom.test');
-      client.selectApiDomain(1);
+      expect(client.apiDomains, ['api.custom.test', 'fallback.test']);
+      client.selectApiDomain(0);
 
       final uri = client.uriFor('/search');
-      expect(uri.host, 'fallback.test');
+      expect(uri.host, 'api.custom.test');
       expect(uri.scheme, 'https');
     });
 
@@ -117,7 +117,7 @@ void main() {
       ]);
     });
 
-    test('domain updater result keeps custom domains at priority zero', () async {
+    test('domain updater prepends custom domains and appends updated official domains', () async {
       final client = JmClient(
         autoUpdateDomains: true,
         customApiDomains: const ['https://api.custom.test'],
@@ -132,10 +132,8 @@ void main() {
 
       await client.ensureDomainsUpdated();
 
-      expect(client.apiDomains.first, 'api.custom.test');
-      expect(client.apiDomains, contains('updated.api.test'));
-      expect(client.imageDomains.first, 'img.custom.test');
-      expect(client.imageDomains, contains('updated.img.test'));
+      expect(client.apiDomains, ['api.custom.test', 'updated.api.test']);
+      expect(client.imageDomains, ['img.custom.test', 'updated.img.test']);
     });
   });
 }

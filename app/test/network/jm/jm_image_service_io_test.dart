@@ -113,7 +113,7 @@ void main() {
   });
 
   group('JmImageService custom domain', () {
-    test('recognizes custom image host and falls back to https auto domains', () async {
+    test('recognizes custom image host and falls back to official domains', () async {
       final client = JmClient(
         domains: const JmDomainConfig(
           apiDomains: ['api.test'],
@@ -156,21 +156,78 @@ void main() {
         cache: _MemoryImageCache(),
       );
 
-      await service.loadDecodedBytes(
+      final bytes = await service.loadDecodedBytes(
         'http://img.local:3000/media/albums/200.jpg',
       );
+      expect(bytes, equals(Uint8List.fromList([1])));
 
       expect(requestedUris.length, greaterThanOrEqualTo(2));
-      final first = requestedUris.first;
-      expect(first.scheme, 'http');
-      expect(first.host, 'img.local');
-      expect(first.port, 3000);
+      // First attempt uses the custom domain with its configured scheme/port.
+      expect(requestedUris.first.scheme, 'http');
+      expect(requestedUris.first.host, 'img.local');
+      expect(requestedUris.first.port, 3000);
+      // Fallback uses the official image domain.
+      expect(requestedUris.last.host, 'cdn-auto.test');
+      expect(requestedUris.last.scheme, 'https');
+    });
 
-      final fallback = requestedUris.lastWhere(
-        (u) => u.host == 'cdn-auto.test',
+    test('races multiple custom image domains preserving scheme and port', () async {
+      final client = JmClient(
+        autoUpdateDomains: false,
+        customImageDomains: const [
+          'http://img1.local:3000',
+          'https://img2.local:4000',
+        ],
       );
-      expect(fallback.scheme, 'https');
-      expect(fallback.port, 443);
+
+      final requestedUris = <Uri>[];
+      final dio = Dio();
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            requestedUris.add(options.uri);
+            final host = options.uri.host;
+            if (host == 'img1.local') {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  type: DioExceptionType.connectionError,
+                ),
+              );
+              return;
+            }
+            handler.resolve(
+              Response<dynamic>(
+                requestOptions: options,
+                data: <int>[2],
+                statusCode: 200,
+              ),
+            );
+          },
+        ),
+      );
+
+      final service = JmImageService(
+        dio: dio,
+        client: client,
+        cache: _MemoryImageCache(),
+      );
+
+      final bytes = await service.loadDecodedBytes(
+        'http://img1.local:3000/media/albums/202.jpg',
+      );
+      expect(bytes, equals(Uint8List.fromList([2])));
+
+      // Both custom domains were attempted.
+      final hosts = requestedUris.map((u) => u.host).toSet();
+      expect(hosts, contains('img1.local'));
+      expect(hosts, contains('img2.local'));
+
+      // The winning request used the second custom domain's scheme and port.
+      final winner = requestedUris.lastWhere((u) => u.host == 'img2.local');
+      expect(winner.scheme, 'https');
+      expect(winner.port, 4000);
+      expect(winner.path, '/media/albums/202.jpg');
     });
 
     test('uses custom image domain directly when it succeeds', () async {

@@ -51,6 +51,36 @@ class JmClient {
   Set<String> get customImageHosts =>
       _customImageUris.map((u) => u.host).toSet();
 
+  /// Mapping from custom image domain host to its full configured URI.
+  ///
+  /// Used by the image service to rebuild image URLs for each custom domain
+  /// during domain racing, preserving the original scheme, host and port.
+  Map<String, Uri> get customImageUriByHost => {
+    for (final uri in _customImageUris) uri.host: uri,
+  };
+
+  /// Parse a list of domain strings into URIs and return their hosts.
+  static Iterable<String> _parseHosts(List<String> domains) {
+    return domains.map(Uri.parse).map((u) => u.host);
+  }
+
+  /// Merge [preferred] domains with [fallback] domains, keeping preferred first
+  /// and removing duplicates while preserving order.
+  static List<String> _mergeDomains(
+    Iterable<String> preferred,
+    Iterable<String> fallback,
+  ) {
+    final result = <String>[];
+    final seen = <String>{};
+    for (final domain in preferred) {
+      if (seen.add(domain)) result.add(domain);
+    }
+    for (final domain in fallback) {
+      if (seen.add(domain)) result.add(domain);
+    }
+    return result;
+  }
+
   int get currentApiDomainIndex => _apiDomainIndex;
 
   void selectApiDomain(int index) {
@@ -83,14 +113,18 @@ class JmClient {
        _customImageUris = List.unmodifiable(
          customImageDomains.map(Uri.parse).toList(),
        ),
-       _apiDomains = List.unmodifiable([
-         ...customApiDomains.map(Uri.parse).map((u) => u.host),
-         ...(domains?.apiDomains ?? JmConstants.apiDomains),
-       ]),
-       _imageDomains = List.unmodifiable([
-         ...customImageDomains.map(Uri.parse).map((u) => u.host),
-         ...(domains?.imageDomains ?? JmConstants.imageDomains),
-       ]) {
+       _apiDomains = List.unmodifiable(
+         _mergeDomains(
+           _parseHosts(customApiDomains),
+           domains?.apiDomains ?? JmConstants.apiDomains,
+         ),
+       ),
+       _imageDomains = List.unmodifiable(
+         _mergeDomains(
+           _parseHosts(customImageDomains),
+           domains?.imageDomains ?? JmConstants.imageDomains,
+         ),
+       ) {
     this.dio.interceptors.add(_JmLoggingInterceptor());
     // 尽量复用连接：长连接 + 合理超时。
     this.dio.options = this.dio.options.copyWith(
@@ -130,18 +164,23 @@ class JmClient {
   }
 
   void _applyDomainConfig(JmDomainConfig config) {
+    // 自定义域名优先；动态更新返回的官方域名作为兜底，避免自定义节点异常时完全不可用。
     if (config.apiDomains.isNotEmpty) {
-      _apiDomains = List.unmodifiable([
-        ..._customApiUris.map((u) => u.host),
-        ...config.apiDomains,
-      ]);
+      _apiDomains = List.unmodifiable(
+        _mergeDomains(
+          _customApiUris.map((u) => u.host),
+          config.apiDomains,
+        ),
+      );
       _apiDomainIndex = 0;
     }
     if (config.imageDomains.isNotEmpty) {
-      _imageDomains = List.unmodifiable([
-        ..._customImageUris.map((u) => u.host),
-        ...config.imageDomains,
-      ]);
+      _imageDomains = List.unmodifiable(
+        _mergeDomains(
+          _customImageUris.map((u) => u.host),
+          config.imageDomains,
+        ),
+      );
       _imageDomainIndex = 0;
     }
   }
@@ -187,9 +226,7 @@ class JmClient {
   bool _canSwitchApiDomain() => _apiDomainIndex + 1 < _apiDomains.length;
 
   void _switchApiDomain() {
-    if (_canSwitchApiDomain()) {
-      _apiDomainIndex++;
-    }
+    _advanceDomainOrReset();
   }
 
   Map<String, String> headersFor(String path, int timestamp) {
@@ -494,6 +531,7 @@ class JmClient {
   }
 
   void _advanceDomainOrReset() {
+    // 域名列表已按“自定义优先、官方兜底”合并，失败时按顺序切换。
     if (_canSwitchApiDomain()) {
       _apiDomainIndex++;
     } else {
@@ -570,7 +608,10 @@ class _JmLoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     options.extra[_startKey] = DateTime.now().millisecondsSinceEpoch;
-    globalLogger.d('JM REQ ${options.method} ${options.uri}');
+    final tokenparam = options.headers['tokenparam'] ?? options.headers['Tokenparam'];
+    globalLogger.d(
+      'JM REQ ${options.method} ${options.uri} (tokenparam=$tokenparam)',
+    );
     handler.next(options);
   }
 
@@ -578,14 +619,15 @@ class _JmLoggingInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     final req = response.requestOptions;
     final elapsed = _elapsedMs(req);
+    final srvTs = response.headers.value('X-JM-Timestamp');
     if (kReleaseMode) {
       globalLogger.d(
-        'JM RES ${req.method} ${req.uri} -> ${response.statusCode} (${elapsed}ms)',
+        'JM RES ${req.method} ${req.uri} -> ${response.statusCode} (${elapsed}ms, srv_ts=$srvTs)',
       );
     } else {
       final body = _formatResponseBody(response.data);
       globalLogger.d(
-        'JM RES ${req.method} ${req.uri} -> ${response.statusCode} (${elapsed}ms)\n'
+        'JM RES ${req.method} ${req.uri} -> ${response.statusCode} (${elapsed}ms, srv_ts=$srvTs)\n'
         'BODY: $body',
       );
     }

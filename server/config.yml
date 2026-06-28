@@ -1,0 +1,24 @@
+# JM Manga Server configuration.
+
+host: 0.0.0.0
+port: 8080
+
+log_level: INFO
+log_file: logs/server.log
+log_max_bytes: 10485760
+log_backup_count: 5
+
+api_cache_ttl: 60
+api_cache_size: 1000
+
+image_cache_dir: ./cache/images
+image_cache_max_gb: 50
+
+# Optional path to a jmcomic option.yml file.
+# jm_option_file: ./option.yml
+
+# Enable jmcomic internal logging.
+jm_log_enabled: false
+
+# Public base URL used when rewriting image host references (e.g. behind a reverse proxy).
+# public_base_url: https://jm.example.com

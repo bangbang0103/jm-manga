@@ -172,9 +172,13 @@ class JmChapter {
   });
 
   factory JmChapter.fromJson(Map<String, dynamic> json) {
+    final id = json['id'].toString();
+    final seriesId = (json['series_id'] ?? '').toString();
+    // JM 单本（无系列）时 series_id 为 0，album id 即本章 id。
+    final albumId = (seriesId.isEmpty || seriesId == '0') ? id : seriesId;
     return JmChapter(
-      id: json['id'].toString(),
-      albumId: (json['series_id'] ?? '').toString(),
+      id: id,
+      albumId: albumId,
       title: (json['name'] ?? '').toString(),
       imageNames:
           (json['images'] as List<dynamic>?)

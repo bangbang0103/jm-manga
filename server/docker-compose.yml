@@ -1,0 +1,15 @@
+services:
+  jm-manga-server:
+    build: .
+    container_name: jm-manga-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./cache:/app/cache
+      - ./logs:/app/logs
+      - ./config.yml:/app/config.yml:ro
+    environment:
+      - JM_SERVER_LOG_LEVEL=INFO
+      - JM_SERVER_IMAGE_CACHE_DIR=/app/cache/images
+      - JM_SERVER_LOG_FILE=/app/logs/server.log
+    restart: unless-stopped

@@ -37,6 +37,10 @@ opencode.json
 *.sqlite
 *.sqlite3
 
+# Server runtime data
+server/cache/
+server/logs/
+
 # Flutter
 app/.dart_tool/
 app/.flutter-plugins

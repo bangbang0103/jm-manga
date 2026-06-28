@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jm_manga/network/jm/jm_constants.dart';
 import 'package:jm_manga/network/jm/jm_domain.dart';
 import 'package:jm_manga/network/jm/jm_domain_updater.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,7 +43,7 @@ void main() {
 
       expect(domains, isNotEmpty);
       // Fallback comes from JmConstants.apiDomains.
-      expect(domains.first, 'www.cdnaspa.club');
+      expect(domains.first, JmConstants.apiDomains.first);
     });
 
     test('returns cached domains when cache is valid', () async {
