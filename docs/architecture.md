@@ -125,7 +125,7 @@ JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS
 - **缓存策略**：
   - API 响应做 60s 内存 LRU 缓存；`/favorite`、`/login` 等有状态接口不缓存。
   - 图片做磁盘 LRU 缓存，默认上限 50GB，缓存键忽略 `scramble_id` query 参数。
-- **配置**：`config.yml` 与环境变量（前缀 `JM_SERVER_`）均可；详情见 `server/README.md`。
+- **配置**：`config.yml` 与环境变量（前缀 `JM_SERVER_`）均可；详情见 `server/README.zh.md`。
   - 新增 `public_base_url`：用于 `/chapter_view_template` 中 `imghost` 的改写，方便反代场景。未配置时会依次尝试 `X-Forwarded-Proto` / `X-Forwarded-Host`、`Forwarded` header，最后回退到请求自身的 scheme 与 Host。
   - Docker 构建已固定 uv 版本并复制 `uv.lock` 安装，保证依赖可复现。
 - **测试**：`server/tests/` 包含单元测试与基于 mock jmcomic client 的集成测试，运行 `uv run pytest`。

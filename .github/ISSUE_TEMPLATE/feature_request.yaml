@@ -1,0 +1,108 @@
+name: 功能建议
+description: 为移动 App、可选服务端、构建流程或文档提出改进建议。
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你提出改进建议。
+
+        本项目是一个面向 iOS 与 Android 的个人学习/研究型漫画阅读器，并包含一个可选的自托管加速服务端。请在此范围内提交建议，且不要包含受版权保护的内容、凭证、Cookie、Token 或私有服务 URL。
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 范围确认
+      options:
+        - label: 本建议面向 iOS/Android 客户端、可选自托管服务端、构建/发布脚本或项目文档。
+          required: true
+        - label: 本建议不需要把凭证存储在 SecureStorage 之外，也不会暴露敏感本地数据。
+          required: true
+        - label: 本建议不包含或依赖分发受版权保护的漫画内容。
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题或使用场景
+      description: 这能解决什么用户问题？
+      placeholder: 在网络较慢时阅读，我希望……
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 描述你期望的行为或流程。
+      placeholder: 增加一个设置，让用户可以……
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: 目标模块
+      multiple: true
+      options:
+        - Android 客户端
+        - iOS 客户端
+        - 可选自托管服务端
+        - 构建/发布脚本
+        - 文档
+        - 不确定
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 优先级
+      description: 对你的使用场景有多重要？
+      options:
+        - 锦上添花
+        - 比较重要
+        - 影响使用
+        - 不确定
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 已考虑的替代方案
+      description: 你考虑过哪些折中方案或其他设计？
+      placeholder: 我目前通过……来绕过这个问题。
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 完成后应该满足哪些条件？
+      placeholder: |
+        - 用户可以配置……
+        - 设置重启后仍然保留
+        - 不影响现有收藏和阅读进度
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical_notes
+    attributes:
+      label: 技术备注
+      description: 如果你了解，可说明受影响的页面、API、设置、存储行为、服务端路由或文档。
+      placeholder: 这可能涉及设置 > 高级、DirectMangaRepository 或服务端图片缓存。
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 补充上下文
+      description: 删除私有/敏感信息后，可补充示意、相关 issue 或示例。
+    validations:
+      required: false

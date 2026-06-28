@@ -1,0 +1,150 @@
+name: 问题反馈
+description: 反馈移动 App 或可选服务端中可复现的问题。
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你花时间提交问题反馈。
+
+        提交前请删除日志、截图中的密码、Cookie、Token、真实 `.env` 值、签名文件、本地数据库、缓存文件以及任何受版权保护的内容。
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 范围确认
+      options:
+        - label: 我要反馈的是 iOS/Android App 或可选自托管服务端的问题。
+          required: true
+        - label: 我已从本报告中移除敏感账号凭证、会话 Cookie、Token 和本地文件。
+          required: true
+        - label: 本报告不包含受版权保护的漫画内容。
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 问题摘要
+      description: 发生了什么？
+      placeholder: 从收藏打开章节时应用崩溃……
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: 受影响模块
+      multiple: true
+      options:
+        - Android 客户端
+        - iOS 客户端
+        - 可选自托管服务端
+        - 构建/发布脚本
+        - 文档
+        - 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: 应用版本
+      description: 使用设置中显示的版本、release 产物名或 `VERSION` 文件中的版本号。
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 设备平台
+      options:
+        - Android
+        - iOS
+        - Android 和 iOS 都有
+        - 仅服务端
+        - 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: device_os
+    attributes:
+      label: 设备与系统
+      placeholder: Pixel 8 / Android 15、iPhone 15 / iOS 18.5 等
+    validations:
+      required: false
+
+  - type: dropdown
+    id: connection_mode
+    attributes:
+      label: 连接方式
+      options:
+        - 直连上游数据源
+        - 自定义 API/图片域名
+        - 可选自托管服务端
+        - 已启用 HTTP/SOCKS5 代理
+        - 不确定
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 请提供能复现该问题的最小操作序列。
+      placeholder: |
+        1. 打开应用
+        2. 进入收藏
+        3. 点击手动同步
+        4. 打开任意已同步的漫画
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      placeholder: 章节正常打开并加载图片。
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      placeholder: 阅读器显示错误提示并停留在空白页。
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志、截图或堆栈
+      description: 粘贴相关诊断信息，并删除其中的凭证、Cookie、Token、会暴露私有服务的 URL 以及受版权保护的内容。
+      render: text
+    validations:
+      required: false
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: 复现频率
+      options:
+        - 必现
+        - 经常
+        - 偶尔
+        - 仅一次
+        - 不确定
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 补充说明
+      description: 如有近期改动、代理/域名设置、服务端部署细节或相关 issue，可在此补充。
+    validations:
+      required: false

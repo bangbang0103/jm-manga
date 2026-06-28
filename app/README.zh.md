@@ -13,4 +13,4 @@ flutter test
 flutter run
 ```
 
-构建脚本位于 `../scripts/build-flutter.sh` 和 `../scripts/build.sh`。
+构建与发布脚本位于 `../scripts/release.sh`、`../scripts/build-flutter.sh` 和 `../scripts/package-server.sh`。

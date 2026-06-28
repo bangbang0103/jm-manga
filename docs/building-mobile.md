@@ -5,17 +5,20 @@
 
 ## 统一脚本
 
-推荐使用仓库根目录的 `scripts/build.sh`：
+推荐使用仓库根目录的 `scripts/release.sh`：
 
 ```bash
+# 移动端全量：Android APK + iOS 未签名 IPA
+./scripts/release.sh mobile
+
 # Android APK
-./scripts/build.sh apk
+./scripts/release.sh apk
 
 # iOS 未签名 IPA
-./scripts/build.sh ios
+./scripts/release.sh ios
 
-# APK + IPA
-./scripts/build.sh all
+# 全部产物：移动端 + server 包
+./scripts/release.sh all
 ```
 
 输出产物位于 `build/`，每个文件附带 `.sha256` 校验文件：
@@ -30,7 +33,7 @@ build/jm-manga-unsigned-ipa-v0.1.0+1-ios-release.ipa.sha256
 可以通过环境变量覆盖产物名前缀：
 
 ```bash
-APP_NAME=my-app ./scripts/build.sh apk
+APP_NAME=my-app ./scripts/release.sh apk
 ```
 
 ## Android
@@ -52,7 +55,7 @@ flutter build apk --release
 使用仓库脚本：
 
 ```bash
-./scripts/build.sh apk
+./scripts/release.sh apk
 ```
 
 ## iOS
@@ -72,7 +75,7 @@ flutter build ios --release --no-codesign
 使用仓库脚本可直接产出未签名 IPA：
 
 ```bash
-./scripts/build.sh ios
+./scripts/release.sh ios
 ```
 
 > 该 IPA 未签名，无法直接安装到设备。分发前需使用个人/企业证书重签。

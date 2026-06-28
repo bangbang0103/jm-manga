@@ -1,3 +1,5 @@
+> Language: English | [中文](README.zh.md)
+
 # JM Manga Server
 
 Self-hosted acceleration server for the JM Manga Flutter app. It proxies JM's

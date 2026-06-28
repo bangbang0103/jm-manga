@@ -13,4 +13,4 @@ flutter test
 flutter run
 ```
 
-Build scripts are located at `../scripts/build-flutter.sh` and `../scripts/build.sh`.
+Release and build scripts are located at `../scripts/release.sh`, `../scripts/build-flutter.sh` and `../scripts/package-server.sh`.

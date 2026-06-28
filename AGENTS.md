@@ -5,7 +5,8 @@
 这是一个个人使用的移动端漫画阅读 App，目前仅支持 iOS 与 Android。
 
 - `app/`：Flutter 客户端，Riverpod 状态管理，dio 请求数据源接口。
-- `scripts/`：移动端构建脚本。
+- `server/`：可选自托管加速服务（FastAPI + jmcomic）。
+- `scripts/`：移动端与 server 的构建/打包脚本。
 - `docs/`：架构、打包、开发指南和接口探测文档。
 
 ## 工作原则
@@ -26,8 +27,9 @@ flutter test
 构建脚本语法检查：
 
 ```bash
-bash -n scripts/build.sh
+bash -n scripts/release.sh
 bash -n scripts/build-flutter.sh
+bash -n scripts/package-server.sh
 bash -n scripts/sync-version.sh
 ```
 
