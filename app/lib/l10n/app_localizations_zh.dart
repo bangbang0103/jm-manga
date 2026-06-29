@@ -54,6 +54,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get imageLoadFailed => '加载失败';
 
   @override
+  String get imageLoadRetryHint => '点击重试';
+
+  @override
   String get actionLogin => '登录';
 
   @override
@@ -586,10 +589,49 @@ class AppLocalizationsZh extends AppLocalizations {
   String get customDomainDisabled => '未启用';
 
   @override
+  String get confirmDeleteDomainTitle => '删除域名';
+
+  @override
+  String get confirmDeleteDomainBody => '确定要删除该域名吗？';
+
+  @override
+  String get confirmClearDomainsTitle => '清空域名';
+
+  @override
+  String get confirmClearDomainsBody => '确定要清空所有自定义域名吗？';
+
+  @override
+  String get unsavedChangesHint => '有未保存的更改';
+
+  @override
+  String get customDomainDragToReorder => '拖动排序';
+
+  @override
+  String get saveBeforeLeavingTitle => '有未保存的更改';
+
+  @override
+  String get saveBeforeLeavingBody => '当前有未保存的更改，是否保存后再离开？';
+
+  @override
+  String get discardChanges => '放弃更改';
+
+  @override
   String get actionSave => '保存';
 
   @override
   String get actionClear => '清除';
+
+  @override
+  String get actionStop => '停止';
+
+  @override
+  String get actionExit => '退出';
+
+  @override
+  String get exitAppTitle => '退出应用';
+
+  @override
+  String get exitAppBody => '确定要退出应用吗？';
 
   @override
   String get cacheTitle => '缓存';

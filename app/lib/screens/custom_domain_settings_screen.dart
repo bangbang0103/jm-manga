@@ -18,57 +18,116 @@ class CustomDomainSettingsScreen extends ConsumerStatefulWidget {
 
 enum _DomainStatus { unknown, testing, success, failure }
 
+enum _LeaveAction { save, discard, cancel }
+
 class _DomainRow {
+  static int _idCounter = 0;
+  final String id;
   final String url;
   _DomainStatus status = _DomainStatus.unknown;
   int? latencyMs;
 
-  _DomainRow({required this.url});
+  _DomainRow({required this.url}) : id = 'domain_${_idCounter++}';
 }
 
 class _CustomDomainSettingsScreenState
     extends ConsumerState<CustomDomainSettingsScreen> {
   late final List<_DomainRow> _apiRows;
   late final List<_DomainRow> _imageRows;
+  late List<String> _savedApiUrls;
+  late List<String> _savedImageUrls;
   bool _testingAll = false;
+  CancelToken? _testCancelToken;
 
   @override
   void initState() {
     super.initState();
     final config = ref.read(configProvider);
-    _apiRows = config.customApiDomains.map((u) => _DomainRow(url: u)).toList();
-    _imageRows =
-        config.customImageDomains.map((u) => _DomainRow(url: u)).toList();
+    _savedApiUrls = List<String>.from(config.customApiDomains);
+    _savedImageUrls = List<String>.from(config.customImageDomains);
+    _apiRows = _savedApiUrls.map((u) => _DomainRow(url: u)).toList();
+    _imageRows = _savedImageUrls.map((u) => _DomainRow(url: u)).toList();
+  }
+
+  bool get _isDirty {
+    return !_urlListsEqual(
+          _apiRows.map((r) => r.url).toList(),
+          _savedApiUrls,
+        ) ||
+        !_urlListsEqual(
+          _imageRows.map((r) => r.url).toList(),
+          _savedImageUrls,
+        );
+  }
+
+  bool _urlListsEqual(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  void _updateSavedUrls() {
+    setState(() {
+      _savedApiUrls = _apiRows.map((r) => r.url).toList();
+      _savedImageUrls = _imageRows.map((r) => r.url).toList();
+    });
   }
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context)!;
-    await ref.read(configProvider.notifier).setCustomApiDomains(
-      _apiRows.map((r) => r.url).toList(),
-    );
-    await ref.read(configProvider.notifier).setCustomImageDomains(
-      _imageRows.map((r) => r.url).toList(),
-    );
+    final apiUrls = _apiRows.map((r) => r.url).toList();
+    final imageUrls = _imageRows.map((r) => r.url).toList();
+    await ref.read(configProvider.notifier).setCustomApiDomains(apiUrls);
+    await ref.read(configProvider.notifier).setCustomImageDomains(imageUrls);
 
     if (!mounted) return;
+    _updateSavedUrls();
     TopToast.show(context, l10n.customDomainSaved, type: TopToastType.success);
+  }
+
+  Future<bool> _confirmClear() async {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.confirmClearDomainsTitle),
+        content: Text(l10n.confirmClearDomainsBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            child: Text(l10n.clearAll),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
   }
 
   Future<void> _clear() async {
     final l10n = AppLocalizations.of(context)!;
+    final confirmed = await _confirmClear();
+    if (!confirmed) return;
+
     setState(() {
       _apiRows.clear();
       _imageRows.clear();
     });
 
-    await ref.read(configProvider.notifier).setCustomApiDomains(
-      const <String>[],
-    );
-    await ref.read(configProvider.notifier).setCustomImageDomains(
-      const <String>[],
-    );
+    await ref.read(configProvider.notifier).setCustomApiDomains(const <String>[]);
+    await ref
+        .read(configProvider.notifier)
+        .setCustomImageDomains(const <String>[]);
 
     if (!mounted) return;
+    _updateSavedUrls();
     TopToast.show(context, l10n.customDomainCleared, type: TopToastType.success);
   }
 
@@ -92,33 +151,63 @@ class _CustomDomainSettingsScreenState
     });
   }
 
-  void _removeApiDomain(int index) {
+  Future<bool> _confirmRemove(String domainUrl) async {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.confirmDeleteDomainTitle),
+        content: Text(l10n.confirmDeleteDomainBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            child: Text(l10n.actionDelete),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
+  Future<void> _removeApiDomain(int index) async {
+    final row = _apiRows[index];
+    final confirmed = await _confirmRemove(row.url);
+    if (!confirmed) return;
     setState(() => _apiRows.removeAt(index));
   }
 
-  void _removeImageDomain(int index) {
+  Future<void> _removeImageDomain(int index) async {
+    final row = _imageRows[index];
+    final confirmed = await _confirmRemove(row.url);
+    if (!confirmed) return;
     setState(() => _imageRows.removeAt(index));
   }
 
-  void _moveApiDomain(int index, int delta) {
-    final newIndex = index + delta;
-    if (newIndex < 0 || newIndex >= _apiRows.length) return;
+  void _reorderApiDomain(int oldIndex, int newIndex) {
     setState(() {
-      final item = _apiRows.removeAt(index);
+      final item = _apiRows.removeAt(oldIndex);
       _apiRows.insert(newIndex, item);
     });
   }
 
-  void _moveImageDomain(int index, int delta) {
-    final newIndex = index + delta;
-    if (newIndex < 0 || newIndex >= _imageRows.length) return;
+  void _reorderImageDomain(int oldIndex, int newIndex) {
     setState(() {
-      final item = _imageRows.removeAt(index);
+      final item = _imageRows.removeAt(oldIndex);
       _imageRows.insert(newIndex, item);
     });
   }
 
-  Future<int?> _measureLatency(String url, String? proxyUrl) async {
+  Future<int?> _measureLatency(
+    String url,
+    String? proxyUrl,
+    CancelToken? cancelToken,
+  ) async {
     final dio = Dio();
     configureDioProxy(dio, proxyUrl);
     dio.options = dio.options.copyWith(
@@ -128,9 +217,10 @@ class _CustomDomainSettingsScreenState
     );
     final stopwatch = Stopwatch()..start();
     try {
-      await dio.get(url);
+      await dio.get(url, cancelToken: cancelToken);
       return stopwatch.elapsedMilliseconds;
-    } on DioException {
+    } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) rethrow;
       return null;
     } finally {
       dio.close();
@@ -158,21 +248,42 @@ class _CustomDomainSettingsScreenState
     });
 
     final proxyUrl = ref.read(configProvider).proxyUrl;
-    final futures = allRows.map((row) async {
-      final latency = await _measureLatency(row.url, proxyUrl);
-      if (!mounted) return;
-      setState(() {
-        row.latencyMs = latency;
-        row.status = latency != null
-            ? _DomainStatus.success
-            : _DomainStatus.failure;
-      });
-    }).toList();
+    _testCancelToken = CancelToken();
+    final cancelToken = _testCancelToken;
 
-    await Future.wait(futures);
+    try {
+      await Future.wait(
+        allRows.map((row) async {
+          try {
+            final latency = await _measureLatency(row.url, proxyUrl, cancelToken);
+            if (!mounted) return;
+            if (cancelToken?.isCancelled ?? false) return;
+            setState(() {
+              row.latencyMs = latency;
+              row.status = latency != null
+                  ? _DomainStatus.success
+                  : _DomainStatus.failure;
+            });
+          } on DioException catch (e) {
+            if (!CancelToken.isCancel(e)) {
+              if (mounted) {
+                setState(() => row.status = _DomainStatus.failure);
+              }
+            }
+          }
+        }),
+      );
+    } on DioException catch (e) {
+      if (!CancelToken.isCancel(e)) rethrow;
+    } finally {
+      if (mounted) {
+        setState(() => _testingAll = false);
+      }
+      _testCancelToken = null;
+    }
 
     if (!mounted) return;
-    setState(() => _testingAll = false);
+    if (cancelToken?.isCancelled ?? false) return;
 
     final hasFailure = allRows.any((r) => r.status == _DomainStatus.failure);
     if (hasFailure) {
@@ -190,83 +301,140 @@ class _CustomDomainSettingsScreenState
     }
   }
 
+  void _stopTest() {
+    _testCancelToken?.cancel();
+  }
+
+  Future<void> _handleLeave() async {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final action = await showDialog<_LeaveAction>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.saveBeforeLeavingTitle),
+        content: Text(l10n.saveBeforeLeavingBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(_LeaveAction.cancel),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(_LeaveAction.discard),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.onSurfaceVariant,
+            ),
+            child: Text(l10n.discardChanges),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(_LeaveAction.save),
+            child: Text(l10n.actionSave),
+          ),
+        ],
+      ),
+    );
+
+    if (action == _LeaveAction.save) {
+      await _save();
+      if (mounted) Navigator.of(context).pop();
+    } else if (action == _LeaveAction.discard) {
+      if (mounted) Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _testCancelToken?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isDirty = _isDirty;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.customDomainTitle)),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _InfoCard(subtitle: l10n.customDomainSubtitle),
-              const SizedBox(height: 20),
-              _DomainSection(
-                label: l10n.customDomainApiLabel,
-                emptyText: l10n.customDomainEmpty,
-                icon: Icons.cloud_outlined,
-                rows: _apiRows,
-                onAdd: () => _showAddDialog(isApi: true),
-                onRemove: _removeApiDomain,
-                onMove: _moveApiDomain,
-                latencyFormatter: (ms) => l10n.customDomainLatency('$ms'),
-                latencyFailed: l10n.customDomainLatencyFailed,
-                moveUpLabel: l10n.customDomainMoveUp,
-                moveDownLabel: l10n.customDomainMoveDown,
-                deleteLabel: l10n.customDomainDelete,
-              ),
-              const SizedBox(height: 20),
-              _DomainSection(
-                label: l10n.customDomainImageLabel,
-                emptyText: l10n.customDomainEmpty,
-                icon: Icons.image_outlined,
-                rows: _imageRows,
-                onAdd: () => _showAddDialog(isApi: false),
-                onRemove: _removeImageDomain,
-                onMove: _moveImageDomain,
-                latencyFormatter: (ms) => l10n.customDomainLatency('$ms'),
-                latencyFailed: l10n.customDomainLatencyFailed,
-                moveUpLabel: l10n.customDomainMoveUp,
-                moveDownLabel: l10n.customDomainMoveDown,
-                deleteLabel: l10n.customDomainDelete,
-              ),
-              const SizedBox(height: 28),
-              FilledButton.tonalIcon(
-                onPressed: _testingAll ? null : _testAll,
-                icon: _testingAll
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.network_ping_outlined),
-                label: Text(l10n.customDomainTest),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _clear,
-                      icon: const Icon(Icons.delete_outline),
-                      label: Text(l10n.actionClear),
-                    ),
+    return PopScope(
+      canPop: !isDirty && !_testingAll,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _handleLeave();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.customDomainTitle),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _InfoCard(subtitle: l10n.customDomainSubtitle),
+                const SizedBox(height: 20),
+                _DomainSection(
+                  label: l10n.customDomainApiLabel,
+                  emptyText: l10n.customDomainEmpty,
+                  icon: Icons.cloud_outlined,
+                  rows: _apiRows,
+                  onAdd: () => _showAddDialog(isApi: true),
+                  onRemove: _removeApiDomain,
+                  onReorder: _reorderApiDomain,
+                  latencyFormatter: (ms) => l10n.customDomainLatency('$ms'),
+                  latencyFailed: l10n.customDomainLatencyFailed,
+                  deleteLabel: l10n.customDomainDelete,
+                ),
+                const SizedBox(height: 20),
+                _DomainSection(
+                  label: l10n.customDomainImageLabel,
+                  emptyText: l10n.customDomainEmpty,
+                  icon: Icons.image_outlined,
+                  rows: _imageRows,
+                  onAdd: () => _showAddDialog(isApi: false),
+                  onRemove: _removeImageDomain,
+                  onReorder: _reorderImageDomain,
+                  latencyFormatter: (ms) => l10n.customDomainLatency('$ms'),
+                  latencyFailed: l10n.customDomainLatencyFailed,
+                  deleteLabel: l10n.customDomainDelete,
+                ),
+                const SizedBox(height: 28),
+                if (_testingAll)
+                  OutlinedButton.icon(
+                    onPressed: _stopTest,
+                    icon: const Icon(Icons.stop),
+                    label: Text(l10n.actionStop),
+                  )
+                else
+                  FilledButton.tonalIcon(
+                    onPressed: _testAll,
+                    icon: const Icon(Icons.network_ping_outlined),
+                    label: Text(l10n.customDomainTest),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _save,
-                      icon: const Icon(Icons.check),
-                      label: Text(l10n.actionSave),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _clear,
+                        icon: const Icon(Icons.delete_outline),
+                        label: Text(l10n.actionClear),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _save,
+                        icon: const Icon(Icons.check),
+                        label: Text(l10n.actionSave),
+                      ),
+                    ),
+                  ],
+                ),
+                if (isDirty) ...[
+                  const SizedBox(height: 12),
+                  _UnsavedBanner(message: l10n.unsavedChangesHint),
                 ],
-              ),
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
@@ -319,11 +487,9 @@ class _DomainSection extends StatelessWidget {
   final List<_DomainRow> rows;
   final VoidCallback onAdd;
   final void Function(int index) onRemove;
-  final void Function(int index, int delta) onMove;
+  final void Function(int oldIndex, int newIndex) onReorder;
   final String Function(int ms) latencyFormatter;
   final String latencyFailed;
-  final String moveUpLabel;
-  final String moveDownLabel;
   final String deleteLabel;
 
   const _DomainSection({
@@ -333,11 +499,9 @@ class _DomainSection extends StatelessWidget {
     required this.rows,
     required this.onAdd,
     required this.onRemove,
-    required this.onMove,
+    required this.onReorder,
     required this.latencyFormatter,
     required this.latencyFailed,
-    required this.moveUpLabel,
-    required this.moveDownLabel,
     required this.deleteLabel,
   });
 
@@ -360,7 +524,7 @@ class _DomainSection extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            _CountBadge(count: rows.length),
+            if (rows.isNotEmpty) _CountBadge(count: rows.length),
             const Spacer(),
             FilledButton.tonal(
               onPressed: onAdd,
@@ -390,30 +554,85 @@ class _DomainSection extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           child: rows.isEmpty
               ? _EmptyState(text: emptyText)
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var i = 0; i < rows.length; i++)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _DomainCard(
-                          row: rows[i],
-                          index: i,
-                          count: rows.length,
-                          onRemove: () => onRemove(i),
-                          onMoveUp: () => onMove(i, -1),
-                          onMoveDown: () => onMove(i, 1),
-                          latencyFormatter: latencyFormatter,
-                          latencyFailed: latencyFailed,
-                          moveUpLabel: moveUpLabel,
-                          moveDownLabel: moveDownLabel,
-                          deleteLabel: deleteLabel,
-                        ),
-                      ),
-                  ],
+              : _ReorderableDomainList(
+                  rows: rows,
+                  onRemove: onRemove,
+                  onReorder: onReorder,
+                  latencyFormatter: latencyFormatter,
+                  latencyFailed: latencyFailed,
+                  deleteLabel: deleteLabel,
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _ReorderableDomainList extends StatelessWidget {
+  final List<_DomainRow> rows;
+  final void Function(int index) onRemove;
+  final void Function(int oldIndex, int newIndex) onReorder;
+  final String Function(int ms) latencyFormatter;
+  final String latencyFailed;
+  final String deleteLabel;
+
+  const _ReorderableDomainList({
+    required this.rows,
+    required this.onRemove,
+    required this.onReorder,
+    required this.latencyFormatter,
+    required this.latencyFailed,
+    required this.deleteLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ReorderableListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      buildDefaultDragHandles: false,
+      itemCount: rows.length,
+      onReorderItem: onReorder,
+      proxyDecorator: (child, index, animation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) {
+            final elevationValue = Tween<double>(begin: 0, end: 6)
+                .evaluate(animation);
+            return Material(
+              elevation: elevationValue,
+              borderRadius: BorderRadius.circular(20),
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              child: child,
+            );
+          },
+          child: child,
+        );
+      },
+      itemBuilder: (context, index) {
+        final row = rows[index];
+        return Padding(
+          key: ValueKey(row.id),
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _DomainCard(
+            row: row,
+            onRemove: () => onRemove(index),
+            dragHandle: ReorderableDragStartListener(
+              index: index,
+              child: Tooltip(
+                message: AppLocalizations.of(context)!.customDomainDragToReorder,
+                child: Icon(
+                  Icons.reorder,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            latencyFormatter: latencyFormatter,
+            latencyFailed: latencyFailed,
+            deleteLabel: deleteLabel,
+          ),
+        );
+      },
     );
   }
 }
@@ -478,6 +697,41 @@ class _EmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UnsavedBanner extends StatelessWidget {
+  final String message;
+
+  const _UnsavedBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 18, color: scheme.onPrimaryContainer),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onPrimaryContainer,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -589,28 +843,18 @@ class _AddDomainDialogState extends State<_AddDomainDialog> {
 
 class _DomainCard extends StatelessWidget {
   final _DomainRow row;
-  final int index;
-  final int count;
   final VoidCallback onRemove;
-  final VoidCallback onMoveUp;
-  final VoidCallback onMoveDown;
+  final Widget dragHandle;
   final String Function(int ms) latencyFormatter;
   final String latencyFailed;
-  final String moveUpLabel;
-  final String moveDownLabel;
   final String deleteLabel;
 
   const _DomainCard({
     required this.row,
-    required this.index,
-    required this.count,
     required this.onRemove,
-    required this.onMoveUp,
-    required this.onMoveDown,
+    required this.dragHandle,
     required this.latencyFormatter,
     required this.latencyFailed,
-    required this.moveUpLabel,
-    required this.moveDownLabel,
     required this.deleteLabel,
   });
 
@@ -632,38 +876,15 @@ class _DomainCard extends StatelessWidget {
     return latencyFormatter(latency);
   }
 
-  (IconData, Color) _statusStyle(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return switch (row.status) {
-      _DomainStatus.testing => (
-          Icons.pending_outlined,
-          scheme.onSurfaceVariant,
-        ),
-      _DomainStatus.success => (
-          Icons.check_circle_rounded,
-          scheme.tertiary,
-        ),
-      _DomainStatus.failure => (
-          Icons.error_rounded,
-          scheme.error,
-        ),
-      _DomainStatus.unknown => (
-          Icons.dns_outlined,
-          scheme.onSurfaceVariant,
-        ),
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final displayUri = _displayUri(row.url);
-    final (statusIcon, statusColor) = _statusStyle(context);
     final latencyColor = _latencyColor(context);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(8, 14, 14, 14),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(20),
@@ -671,16 +892,12 @@ class _DomainCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(statusIcon, color: statusColor, size: 20),
+          SizedBox(
+            width: 44,
+            height: 44,
+            child: Center(child: dragHandle),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -709,15 +926,10 @@ class _DomainCard extends StatelessWidget {
             color: latencyColor,
           ),
           const SizedBox(width: 4),
-          _ActionMenu(
-            canMoveUp: index > 0,
-            canMoveDown: index < count - 1,
-            onMoveUp: onMoveUp,
-            onMoveDown: onMoveDown,
-            onDelete: onRemove,
-            moveUpLabel: moveUpLabel,
-            moveDownLabel: moveDownLabel,
-            deleteLabel: deleteLabel,
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: scheme.error),
+            tooltip: deleteLabel,
+            onPressed: onRemove,
           ),
         ],
       ),
@@ -760,79 +972,4 @@ class _LatencyChip extends StatelessWidget {
   }
 }
 
-class _ActionMenu extends StatelessWidget {
-  final bool canMoveUp;
-  final bool canMoveDown;
-  final VoidCallback onMoveUp;
-  final VoidCallback onMoveDown;
-  final VoidCallback onDelete;
-  final String moveUpLabel;
-  final String moveDownLabel;
-  final String deleteLabel;
 
-  const _ActionMenu({
-    required this.canMoveUp,
-    required this.canMoveDown,
-    required this.onMoveUp,
-    required this.onMoveDown,
-    required this.onDelete,
-    required this.moveUpLabel,
-    required this.moveDownLabel,
-    required this.deleteLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return PopupMenuButton<VoidCallback>(
-      icon: Icon(
-        Icons.more_vert,
-        color: scheme.onSurfaceVariant,
-      ),
-      onSelected: (callback) => callback(),
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: onMoveUp,
-          enabled: canMoveUp,
-          child: Row(
-            children: [
-              const Icon(Icons.arrow_upward, size: 20),
-              const SizedBox(width: 10),
-              Text(moveUpLabel),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: onMoveDown,
-          enabled: canMoveDown,
-          child: Row(
-            children: [
-              const Icon(Icons.arrow_downward, size: 20),
-              const SizedBox(width: 10),
-              Text(moveDownLabel),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: onDelete,
-          child: Row(
-            children: [
-              Icon(
-                Icons.delete_outline,
-                size: 20,
-                color: scheme.error,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                deleteLabel,
-                style: TextStyle(color: scheme.error),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}

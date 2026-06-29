@@ -44,6 +44,8 @@ class JmImageService {
   Future<Uint8List> loadDecodedBytes(String url) {
     throw UnsupportedError('Direct JM images are not supported on Web');
   }
+
+  void clearBackoff() {}
 }
 
 class JmImageMetadata {

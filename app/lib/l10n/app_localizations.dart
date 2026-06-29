@@ -188,6 +188,12 @@ abstract class AppLocalizations {
   /// **'Load failed'**
   String get imageLoadFailed;
 
+  /// No description provided for @imageLoadRetryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to retry'**
+  String get imageLoadRetryHint;
+
   /// No description provided for @actionLogin.
   ///
   /// In en, this message translates to:
@@ -1202,6 +1208,60 @@ abstract class AppLocalizations {
   /// **'Disabled'**
   String get customDomainDisabled;
 
+  /// No description provided for @confirmDeleteDomainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete domain'**
+  String get confirmDeleteDomainTitle;
+
+  /// No description provided for @confirmDeleteDomainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this domain?'**
+  String get confirmDeleteDomainBody;
+
+  /// No description provided for @confirmClearDomainsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear domains'**
+  String get confirmClearDomainsTitle;
+
+  /// No description provided for @confirmClearDomainsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to clear all custom domains?'**
+  String get confirmClearDomainsBody;
+
+  /// No description provided for @unsavedChangesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get unsavedChangesHint;
+
+  /// No description provided for @customDomainDragToReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get customDomainDragToReorder;
+
+  /// No description provided for @saveBeforeLeavingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get saveBeforeLeavingTitle;
+
+  /// No description provided for @saveBeforeLeavingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved changes. Save before leaving?'**
+  String get saveBeforeLeavingBody;
+
+  /// No description provided for @discardChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discardChanges;
+
   /// No description provided for @actionSave.
   ///
   /// In en, this message translates to:
@@ -1213,6 +1273,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear'**
   String get actionClear;
+
+  /// No description provided for @actionStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get actionStop;
+
+  /// No description provided for @actionExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get actionExit;
+
+  /// No description provided for @exitAppTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit app'**
+  String get exitAppTitle;
+
+  /// No description provided for @exitAppBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to exit the app?'**
+  String get exitAppBody;
 
   /// No description provided for @cacheTitle.
   ///

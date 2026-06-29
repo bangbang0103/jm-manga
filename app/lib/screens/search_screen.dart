@@ -248,9 +248,11 @@ class _SearchHistoryView extends StatelessWidget {
               children: history.map((query) {
                 return InputChip(
                   label: Text(query),
-                  deleteIcon: const Icon(Icons.close, size: 18),
+                  deleteIcon: const Icon(Icons.close, size: 20),
                   onDeleted: () => onDelete(query),
                   onPressed: () => onTap(query),
+                  materialTapTargetSize: MaterialTapTargetSize.padded,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
                 );
               }).toList(),
             ),

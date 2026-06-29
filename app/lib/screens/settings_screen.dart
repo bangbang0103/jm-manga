@@ -366,8 +366,8 @@ class _AboutCard extends ConsumerWidget {
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.error,
                           shape: BoxShape.circle,
                         ),
                       ),

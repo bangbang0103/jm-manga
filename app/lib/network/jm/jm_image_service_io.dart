@@ -78,7 +78,6 @@ class JmImageService {
   final int maxConcurrent;
   final JmClient? _client;
   final _preferredHosts = <String, _PreferredHost>{};
-  final _racedPrefixes = <String>{};
   final _backoffHosts = <String, _BackoffEntry>{};
   final _Semaphore _semaphore;
   final _pending = <String, Future<Uint8List>>{};
@@ -126,6 +125,13 @@ class JmImageService {
 
   void _recordSuccess(String host) {
     _backoffHosts.remove(host);
+  }
+
+  /// 清除所有图片域名的退避状态。
+  ///
+  /// 用户手动点击重试时调用，让之前失败的域名能够重新参与赛马。
+  void clearBackoff() {
+    _backoffHosts.clear();
   }
 
   List<String> _availableImageDomains({String? exclude}) {
@@ -239,29 +245,19 @@ class JmImageService {
 
           // 所有备用域名也都失败，清除过期优选并重新赛马。
           _preferredHosts.remove(prefix);
-          final winner = await _raceImageDomains(uri);
-          _preferredHosts[prefix] = _PreferredHost(host: winner.host);
-          globalLogger.i(
-            'JM IMG re-selected fastest host: ${winner.host} for $prefix',
-          );
-          return winner.bytes;
         }
-      }
-
-      // 优选过期时清除，避免使用陈旧的节点选择。
-      if (preferred != null) {
+      } else if (preferred != null) {
+        // 优选过期时清除，避免使用陈旧的节点选择。
         _preferredHosts.remove(prefix);
       }
 
-      if (!_racedPrefixes.contains(prefix)) {
-        _racedPrefixes.add(prefix);
-        final winner = await _raceImageDomains(uri);
-        _preferredHosts[prefix] = _PreferredHost(host: winner.host);
-        globalLogger.i(
-          'JM IMG selected fastest host: ${winner.host} for $prefix',
-        );
-        return winner.bytes;
-      }
+      // 没有有效优选时，重新在所有可用域名间赛马，确保失败重试也能切换域名。
+      final winner = await _raceImageDomains(uri);
+      _preferredHosts[prefix] = _PreferredHost(host: winner.host);
+      globalLogger.i(
+        'JM IMG selected fastest host: ${winner.host} for $prefix',
+      );
+      return winner.bytes;
     }
 
     return _fetchWithRetry(uri, maxRetries: 2);

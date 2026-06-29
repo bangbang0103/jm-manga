@@ -123,43 +123,73 @@ class _ImagePlaceholderState extends State<ImagePlaceholder>
   }
 }
 
-/// 图片加载失败占位。
+/// 图片加载失败占位。支持点击重试，并在有 [retryLabel] 时显示引导文案。
 class ImageErrorPlaceholder extends StatelessWidget {
   final IconData icon;
   final String? message;
+  final String? retryLabel;
+  final VoidCallback? onRetry;
 
   const ImageErrorPlaceholder({
     super.key,
     this.icon = Icons.broken_image,
     this.message,
+    this.retryLabel,
+    this.onRetry,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      color: theme.colorScheme.errorContainer,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 40,
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 40,
+          color: theme.colorScheme.onErrorContainer,
+        ),
+        if (message != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            message!,
+            style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onErrorContainer,
             ),
-            if (message != null) ...[
-              const SizedBox(height: 12),
+          ),
+        ],
+        if (retryLabel != null) ...[
+          const SizedBox(height: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.refresh,
+                size: 16,
+                color: theme.colorScheme.onErrorContainer,
+              ),
+              const SizedBox(width: 6),
               Text(
-                message!,
+                retryLabel!,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onErrorContainer,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
-          ],
-        ),
-      ),
+          ),
+        ],
+      ],
+    );
+
+    return Container(
+      color: theme.colorScheme.errorContainer,
+      child: onRetry == null
+          ? Center(child: content)
+          : InkWell(
+              onTap: onRetry,
+              child: Center(child: content),
+            ),
     );
   }
 }

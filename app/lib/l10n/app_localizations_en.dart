@@ -54,6 +54,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get imageLoadFailed => 'Load failed';
 
   @override
+  String get imageLoadRetryHint => 'Tap to retry';
+
+  @override
   String get actionLogin => 'Login';
 
   @override
@@ -598,10 +601,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customDomainDisabled => 'Disabled';
 
   @override
+  String get confirmDeleteDomainTitle => 'Delete domain';
+
+  @override
+  String get confirmDeleteDomainBody =>
+      'Are you sure you want to delete this domain?';
+
+  @override
+  String get confirmClearDomainsTitle => 'Clear domains';
+
+  @override
+  String get confirmClearDomainsBody =>
+      'Are you sure you want to clear all custom domains?';
+
+  @override
+  String get unsavedChangesHint => 'Unsaved changes';
+
+  @override
+  String get customDomainDragToReorder => 'Drag to reorder';
+
+  @override
+  String get saveBeforeLeavingTitle => 'Unsaved changes';
+
+  @override
+  String get saveBeforeLeavingBody =>
+      'You have unsaved changes. Save before leaving?';
+
+  @override
+  String get discardChanges => 'Discard';
+
+  @override
   String get actionSave => 'Save';
 
   @override
   String get actionClear => 'Clear';
+
+  @override
+  String get actionStop => 'Stop';
+
+  @override
+  String get actionExit => 'Exit';
+
+  @override
+  String get exitAppTitle => 'Exit app';
+
+  @override
+  String get exitAppBody => 'Are you sure you want to exit the app?';
 
   @override
   String get cacheTitle => 'Cache';

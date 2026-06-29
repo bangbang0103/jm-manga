@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 /// it with [RefreshIndicator] without layout issues.
 class ErrorPlaceholder extends StatelessWidget {
   final String message;
+  final String? title;
   final VoidCallback? onRetry;
   final String retryLabel;
   final IconData icon;
@@ -12,6 +13,7 @@ class ErrorPlaceholder extends StatelessWidget {
   const ErrorPlaceholder({
     super.key,
     required this.message,
+    this.title,
     this.onRetry,
     required this.retryLabel,
     this.icon = Icons.error_outline,
@@ -32,11 +34,22 @@ class ErrorPlaceholder extends StatelessWidget {
               children: [
                 Icon(icon, size: 48, color: theme.colorScheme.error),
                 const SizedBox(height: 16),
+                if (title != null) ...[
+                  Text(
+                    title!,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Text(
                   message,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 if (onRetry != null) ...[

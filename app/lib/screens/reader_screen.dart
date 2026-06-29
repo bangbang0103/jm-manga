@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/manga_repository.dart';
+import '../data/direct_manga_repository.dart';
 import '../core/theme/app_shadows.dart';
 import '../widgets/animated_favorite_button.dart';
 import '../widgets/error_placeholder.dart';
@@ -45,6 +46,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   String? _resumeAppliedForPhotoId;
   int _resumeAttempts = 0;
   double _itemExtent = 400;
+  final Map<String, int> _imageRetryCounts = {};
 
   @override
   void initState() {
@@ -406,6 +408,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
               itemCount: photo.imageUrls.length,
               itemBuilder: (context, index) {
                 final url = photo.imageUrls[index];
+                final retryCount = _imageRetryCounts[url] ?? 0;
                 return GestureDetector(
                   key: _imageKeys[index],
                   onLongPress: () => showImageDownloadSheet(
@@ -416,13 +419,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
                   ),
                   behavior: HitTestBehavior.translucent,
                   child: Image(
+                    key: ValueKey('reader_image_${url}_$retryCount'),
                     image: ResizeImage(
                       _repo.imageProvider(url),
                       width: targetImageWidth,
                     ),
                     fit: BoxFit.fitWidth,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
+                    frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                      if (wasSynchronouslyLoaded || frame != null) return child;
                       return AspectRatio(
                         aspectRatio: 0.7,
                         child: ImagePlaceholder(message: l10n.imageLoading),
@@ -432,6 +436,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
                       aspectRatio: 0.7,
                       child: ImageErrorPlaceholder(
                         message: l10n.imageLoadFailed,
+                        retryLabel: l10n.imageLoadRetryHint,
+                        onRetry: () {
+                          if (_repo is DirectMangaRepository) {
+                            _repo.imageService.clearBackoff();
+                          }
+                          setState(() {
+                            _imageRetryCounts[url] = retryCount + 1;
+                          });
+                        },
                       ),
                     ),
                   ),
