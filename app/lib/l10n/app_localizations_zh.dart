@@ -254,7 +254,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sectionAppearance => '外观';
 
   @override
-  String get sectionReader => '阅读器';
+  String get sectionReader => '阅读与过滤';
 
   @override
   String get accountAnonymous => '匿名 / 未登录';
@@ -755,4 +755,49 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get faqLogHint => '仍有问题？前往 设置 > 高级选项 > 查看日志 排查请求详情。';
+
+  @override
+  String get excludedTagsTitle => '排除标签';
+
+  @override
+  String excludedTagsCount(Object count) {
+    return '已排除 $count 个标签';
+  }
+
+  @override
+  String get excludedTagsEmpty => '还没有排除任何标签';
+
+  @override
+  String get excludedTagsHint => '输入要排除的 tag';
+
+  @override
+  String excludedTagsAdded(Object tag) {
+    return '已排除“$tag”';
+  }
+
+  @override
+  String excludedTagsRemoved(Object tag) {
+    return '已移除“$tag”';
+  }
+
+  @override
+  String get searchFilterTitle => '过滤';
+
+  @override
+  String get searchFilterCurrentExcludes => '本次排除';
+
+  @override
+  String get searchFilterGlobalExcludes => '全局黑名单';
+
+  @override
+  String get searchFilterAllowThisTime => '本次放行';
+
+  @override
+  String get searchFilterManageGlobal => '管理全局黑名单';
+
+  @override
+  String get searchFilterNoCurrentExcludes => '本次没有临时排除标签';
+
+  @override
+  String get sectionContentFilter => '内容过滤';
 }

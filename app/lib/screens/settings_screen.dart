@@ -191,6 +191,19 @@ class SettingsScreen extends ConsumerWidget {
             _LanguageTile(value: config.locale),
             const SizedBox(height: 32),
             _SectionTitle(title: l10n.sectionReader),
+            Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                leading: const Icon(Icons.block_outlined),
+                title: Text(l10n.excludedTagsTitle),
+                subtitle: Text(
+                  l10n.excludedTagsCount(config.excludedTags.length),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/settings/excluded-tags'),
+              ),
+            ),
+            const SizedBox(height: 16),
             _PreloadTile(value: config.preloadCount),
             const SizedBox(height: 16),
             _GridColumnsTile(value: config.gridColumns),

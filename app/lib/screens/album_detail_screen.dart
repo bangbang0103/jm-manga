@@ -12,6 +12,7 @@ import '../widgets/animated_favorite_button.dart';
 import '../widgets/app_dropdown.dart';
 import '../widgets/error_placeholder.dart';
 import '../widgets/loading_indicator.dart';
+import '../widgets/tag_chip.dart';
 import '../providers/album_providers.dart';
 import '../providers/repository_provider.dart';
 import '../data/favorite_service.dart';
@@ -322,12 +323,9 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                                 spacing: 8,
                                 runSpacing: 4,
                                 children: album.tags.map((tag) {
-                                  return ActionChip(
-                                    label: Text(tag),
-                                    padding: EdgeInsets.zero,
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    onPressed: () => context.push(
+                                  return TagChip(
+                                    label: tag,
+                                    onTap: () => context.push(
                                       '/search?q=${Uri.encodeComponent(tag)}',
                                     ),
                                   );

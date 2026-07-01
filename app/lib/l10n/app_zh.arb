@@ -82,7 +82,7 @@
   "settingsTitle": "设置",
   "sectionAccounts": "JM 账号",
   "sectionAppearance": "外观",
-  "sectionReader": "阅读器",
+  "sectionReader": "阅读与过滤",
   "accountAnonymous": "匿名 / 未登录",
   "accountAddTooltip": "添加账号",
   "accountRefreshTooltip": "刷新登录",
@@ -246,5 +246,33 @@
   "errorServerResponse": "数据源响应异常。",
   "errorLoginExpired": "登录已失效，请重新登录。",
   "errorLocalDataCorrupted": "本地数据损坏。",
-  "errorGeneric": "操作失败，请稍后重试。"
+  "errorGeneric": "操作失败，请稍后重试。",
+  "excludedTagsTitle": "排除标签",
+  "excludedTagsCount": "已排除 {count} 个标签",
+  "@excludedTagsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "excludedTagsEmpty": "还没有排除任何标签",
+  "excludedTagsHint": "输入要排除的 tag",
+  "excludedTagsAdded": "已排除“{tag}”",
+  "@excludedTagsAdded": {
+    "placeholders": {
+      "tag": {}
+    }
+  },
+  "excludedTagsRemoved": "已移除“{tag}”",
+  "@excludedTagsRemoved": {
+    "placeholders": {
+      "tag": {}
+    }
+  },
+  "searchFilterTitle": "过滤",
+  "searchFilterCurrentExcludes": "本次排除",
+  "searchFilterGlobalExcludes": "全局黑名单",
+  "searchFilterAllowThisTime": "本次放行",
+  "searchFilterManageGlobal": "管理全局黑名单",
+  "searchFilterNoCurrentExcludes": "本次没有临时排除标签",
+  "sectionContentFilter": "内容过滤"
 }

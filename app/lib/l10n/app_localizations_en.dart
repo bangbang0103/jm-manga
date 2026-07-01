@@ -255,7 +255,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionAppearance => 'Appearance';
 
   @override
-  String get sectionReader => 'Reader';
+  String get sectionReader => 'Reader & Filter';
 
   @override
   String get accountAnonymous => 'Anonymous / No account';
@@ -773,4 +773,49 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get faqLogHint =>
       'Still stuck? Go to Settings > Advanced > View Logs for request details.';
+
+  @override
+  String get excludedTagsTitle => 'Excluded tags';
+
+  @override
+  String excludedTagsCount(Object count) {
+    return '$count excluded';
+  }
+
+  @override
+  String get excludedTagsEmpty => 'No excluded tags yet';
+
+  @override
+  String get excludedTagsHint => 'Enter a tag to exclude';
+
+  @override
+  String excludedTagsAdded(Object tag) {
+    return 'Excluded “$tag”';
+  }
+
+  @override
+  String excludedTagsRemoved(Object tag) {
+    return 'Removed “$tag”';
+  }
+
+  @override
+  String get searchFilterTitle => 'Filter';
+
+  @override
+  String get searchFilterCurrentExcludes => 'Current excludes';
+
+  @override
+  String get searchFilterGlobalExcludes => 'Global excluded tags';
+
+  @override
+  String get searchFilterAllowThisTime => 'Allow this time';
+
+  @override
+  String get searchFilterManageGlobal => 'Manage global excluded tags';
+
+  @override
+  String get searchFilterNoCurrentExcludes => 'No temporary excludes';
+
+  @override
+  String get sectionContentFilter => 'Content filter';
 }

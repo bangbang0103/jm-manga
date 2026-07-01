@@ -113,7 +113,7 @@
   "settingsTitle": "Settings",
   "sectionAccounts": "JM Comic Accounts",
   "sectionAppearance": "Appearance",
-  "sectionReader": "Reader",
+  "sectionReader": "Reader & Filter",
   "accountAnonymous": "Anonymous / No account",
   "accountAddTooltip": "Add account",
   "accountRefreshTooltip": "Refresh login",
@@ -298,5 +298,33 @@
   "faqLogLevelAnswer": "The log level in Settings controls which logs are recorded:\n\n• DEBUG: records everything including request URLs, responses and CDN selection. Best for troubleshooting.\n• INFO / WARN / ERROR: progressively quieter. Use INFO or WARN for daily use to reduce noise.\n\nChanges take effect immediately.",
   "faqCacheLogsQuestion": "How do I clear cache or export logs?",
   "faqCacheLogsAnswer": "• Clear cache: Settings > Cache, where you can clear cover cache and manga image cache separately.\n\n• Export logs: Settings > Advanced > View Logs, then tap the share button in the top right to export the full log file.",
-  "faqLogHint": "Still stuck? Go to Settings > Advanced > View Logs for request details."
+  "faqLogHint": "Still stuck? Go to Settings > Advanced > View Logs for request details.",
+  "excludedTagsTitle": "Excluded tags",
+  "excludedTagsCount": "{count} excluded",
+  "@excludedTagsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "excludedTagsEmpty": "No excluded tags yet",
+  "excludedTagsHint": "Enter a tag to exclude",
+  "excludedTagsAdded": "Excluded “{tag}”",
+  "@excludedTagsAdded": {
+    "placeholders": {
+      "tag": {}
+    }
+  },
+  "excludedTagsRemoved": "Removed “{tag}”",
+  "@excludedTagsRemoved": {
+    "placeholders": {
+      "tag": {}
+    }
+  },
+  "searchFilterTitle": "Filter",
+  "searchFilterCurrentExcludes": "Current excludes",
+  "searchFilterGlobalExcludes": "Global excluded tags",
+  "searchFilterAllowThisTime": "Allow this time",
+  "searchFilterManageGlobal": "Manage global excluded tags",
+  "searchFilterNoCurrentExcludes": "No temporary excludes",
+  "sectionContentFilter": "Content filter"
 }

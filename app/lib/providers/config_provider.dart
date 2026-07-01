@@ -18,6 +18,7 @@ class AppConfig {
   final LogLevel logLevel;
   final List<String> customApiDomains;
   final List<String> customImageDomains;
+  final List<String> excludedTags;
 
   const AppConfig({
     this.themeMode = ThemeMode.system,
@@ -29,6 +30,7 @@ class AppConfig {
     this.logLevel = kDebugMode ? LogLevel.debug : LogLevel.info,
     this.customApiDomains = const <String>[],
     this.customImageDomains = const <String>[],
+    this.excludedTags = const <String>[],
   });
 
   AppConfig copyWith({
@@ -41,9 +43,11 @@ class AppConfig {
     LogLevel? logLevel,
     List<String>? customApiDomains,
     List<String>? customImageDomains,
+    List<String>? excludedTags,
     bool clearProxyUrl = false,
     bool clearCustomApiDomains = false,
     bool clearCustomImageDomains = false,
+    bool clearExcludedTags = false,
   }) {
     return AppConfig(
       themeMode: themeMode ?? this.themeMode,
@@ -59,6 +63,9 @@ class AppConfig {
       customImageDomains: clearCustomImageDomains
           ? const <String>[]
           : (customImageDomains ?? this.customImageDomains),
+      excludedTags: clearExcludedTags
+          ? const <String>[]
+          : (excludedTags ?? this.excludedTags),
     );
   }
 }
@@ -73,6 +80,7 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
   static const _logLevelKey = 'logLevel';
   static const _customApiDomainsKey = 'customApiDomains';
   static const _customImageDomainsKey = 'customImageDomains';
+  static const _excludedTagsKey = 'excludedTags';
 
   ConfigNotifier() : super(const AppConfig()) {
     load();
@@ -157,6 +165,7 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
     final customImageDomains = _decodeStringList(
       prefs.getString(_customImageDomainsKey),
     );
+    final excludedTags = _decodeStringList(prefs.getString(_excludedTagsKey));
 
     globalLogger.minLevel = logLevel;
 
@@ -172,6 +181,7 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
       logLevel: logLevel,
       customApiDomains: customApiDomains,
       customImageDomains: customImageDomains,
+      excludedTags: excludedTags,
     );
   }
 
@@ -265,6 +275,29 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
       );
       state = state.copyWith(customImageDomains: normalized);
     }
+  }
+
+  Future<void> setExcludedTags(List<String> tags) async {
+    final normalized = <String>{};
+    for (final tag in tags) {
+      final trimmed = normalizeTag(tag);
+      if (trimmed.isEmpty) continue;
+      normalized.add(trimmed);
+    }
+    final list = normalized.toList();
+
+    final prefs = await SharedPreferences.getInstance();
+    if (list.isEmpty) {
+      await prefs.remove(_excludedTagsKey);
+      state = state.copyWith(clearExcludedTags: true);
+    } else {
+      await prefs.setString(_excludedTagsKey, _encodeStringList(list));
+      state = state.copyWith(excludedTags: list);
+    }
+  }
+
+  static String normalizeTag(String tag) {
+    return tag.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
 }
 

@@ -563,7 +563,7 @@ abstract class AppLocalizations {
   /// No description provided for @sectionReader.
   ///
   /// In en, this message translates to:
-  /// **'Reader'**
+  /// **'Reader & Filter'**
   String get sectionReader;
 
   /// No description provided for @accountAnonymous.
@@ -1519,6 +1519,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Still stuck? Go to Settings > Advanced > View Logs for request details.'**
   String get faqLogHint;
+
+  /// No description provided for @excludedTagsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Excluded tags'**
+  String get excludedTagsTitle;
+
+  /// No description provided for @excludedTagsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} excluded'**
+  String excludedTagsCount(Object count);
+
+  /// No description provided for @excludedTagsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No excluded tags yet'**
+  String get excludedTagsEmpty;
+
+  /// No description provided for @excludedTagsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a tag to exclude'**
+  String get excludedTagsHint;
+
+  /// No description provided for @excludedTagsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Excluded “{tag}”'**
+  String excludedTagsAdded(Object tag);
+
+  /// No description provided for @excludedTagsRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed “{tag}”'**
+  String excludedTagsRemoved(Object tag);
+
+  /// No description provided for @searchFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get searchFilterTitle;
+
+  /// No description provided for @searchFilterCurrentExcludes.
+  ///
+  /// In en, this message translates to:
+  /// **'Current excludes'**
+  String get searchFilterCurrentExcludes;
+
+  /// No description provided for @searchFilterGlobalExcludes.
+  ///
+  /// In en, this message translates to:
+  /// **'Global excluded tags'**
+  String get searchFilterGlobalExcludes;
+
+  /// No description provided for @searchFilterAllowThisTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow this time'**
+  String get searchFilterAllowThisTime;
+
+  /// No description provided for @searchFilterManageGlobal.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage global excluded tags'**
+  String get searchFilterManageGlobal;
+
+  /// No description provided for @searchFilterNoCurrentExcludes.
+  ///
+  /// In en, this message translates to:
+  /// **'No temporary excludes'**
+  String get searchFilterNoCurrentExcludes;
+
+  /// No description provided for @sectionContentFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Content filter'**
+  String get sectionContentFilter;
 }
 
 class _AppLocalizationsDelegate

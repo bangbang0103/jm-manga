@@ -6,6 +6,7 @@ import 'screens/album_detail_screen.dart';
 import 'screens/cache_screen.dart';
 import 'screens/category_screen.dart';
 import 'screens/custom_domain_settings_screen.dart';
+import 'screens/excluded_tags_settings_screen.dart';
 import 'screens/faq_screen.dart';
 import 'screens/logs_screen.dart';
 import 'screens/main_screen.dart';
@@ -151,6 +152,14 @@ final router = GoRouter(
         context: context,
         state: state,
         child: const SettingsAdvancedScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/settings/excluded-tags',
+      pageBuilder: (context, state) => _buildPage(
+        context: context,
+        state: state,
+        child: const ExcludedTagsSettingsScreen(),
       ),
     ),
   ],

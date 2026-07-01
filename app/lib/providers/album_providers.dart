@@ -3,21 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/manga_repository.dart';
 import '../models/album.dart';
 import '../models/reading_progress.dart';
+import '../utils/tag_filter.dart';
+import '../utils/tag_query_parser.dart';
+import 'config_provider.dart';
 import 'repository_provider.dart';
 
 final searchProvider =
     StateNotifierProvider.family<
       SearchNotifier,
       AsyncValue<List<AlbumItem>>,
-      String
-    >((ref, query) {
+      SearchRequest
+    >((ref, request) {
       final repo = ref.watch(apiRepositoryProvider);
-      return SearchNotifier(repo, query);
+      return SearchNotifier(repo, request);
     });
 
 class SearchNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   final MangaRepository repo;
-  final String query;
+  final SearchRequest request;
+  final Set<String> _excludedTags;
   int _page = 1;
   bool _loadingMore = false;
   bool _hasMore = true;
@@ -25,10 +29,15 @@ class SearchNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _loadingMore;
 
-  SearchNotifier(this.repo, this.query) : super(const AsyncValue.loading()) {
-    if (query.isNotEmpty) {
+  SearchNotifier(this.repo, this.request)
+    : _excludedTags = {
+        ...request.globalExcludes,
+      }.difference({...request.allowedGlobal, ...request.includes}),
+      super(const AsyncValue.loading()) {
+    if (request.hasSearchTerms) {
       search();
     } else {
+      _hasMore = false;
       state = const AsyncValue.data([]);
     }
   }
@@ -43,25 +52,30 @@ class SearchNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   Future<void> loadMore() async {
     if (_loadingMore || !_hasMore) return;
     _loadingMore = true;
-    await _fetch(page: _page + 1, append: true);
-    _loadingMore = false;
+    try {
+      await _fetch(page: _page + 1, append: true);
+    } finally {
+      _loadingMore = false;
+    }
   }
 
   Future<void> _fetch({required int page, bool append = false}) async {
     try {
-      final results = await repo.search(query, page: page);
+      final results = await repo.search(request.effectiveQuery, page: page);
+      final visible = TagFilter.apply(results, _excludedTags);
       if (results.isEmpty) {
         _hasMore = false;
       } else {
         _page = page;
         _hasMore = results.length >= 20;
       }
+
       if (mounted) {
         if (append) {
           final current = state.valueOrNull ?? [];
-          state = AsyncValue.data([...current, ...results]);
+          state = AsyncValue.data([...current, ...visible]);
         } else {
-          state = AsyncValue.data(results);
+          state = AsyncValue.data(visible);
         }
       }
     } catch (e, st) {
@@ -91,12 +105,14 @@ final rankingsProvider =
       RankingsKey
     >((ref, key) {
       final repo = ref.watch(apiRepositoryProvider);
-      return RankingsNotifier(repo, key);
+      final config = ref.watch(configProvider);
+      return RankingsNotifier(repo, key, config.excludedTags.toSet());
     });
 
 class RankingsNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   final MangaRepository repo;
   final RankingsKey key;
+  final Set<String> excludedTags;
   int _page = 1;
   bool _loadingMore = false;
   bool _hasMore = true;
@@ -104,7 +120,8 @@ class RankingsNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _loadingMore;
 
-  RankingsNotifier(this.repo, this.key) : super(const AsyncValue.loading()) {
+  RankingsNotifier(this.repo, this.key, this.excludedTags)
+    : super(const AsyncValue.loading()) {
     load();
   }
 
@@ -131,6 +148,7 @@ class RankingsNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
         category: key.category,
         page: page,
       );
+      final visible = TagFilter.apply(results, excludedTags);
       if (results.isEmpty) {
         _hasMore = false;
       } else {
@@ -140,9 +158,9 @@ class RankingsNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
       if (mounted) {
         if (append) {
           final current = state.valueOrNull ?? [];
-          state = AsyncValue.data([...current, ...results]);
+          state = AsyncValue.data([...current, ...visible]);
         } else {
-          state = AsyncValue.data(results);
+          state = AsyncValue.data(visible);
         }
       }
     } catch (e, st) {
@@ -174,14 +192,16 @@ final categoryProvider =
       CategoryKey
     >((ref, key) {
       final repo = ref.watch(apiRepositoryProvider);
+      final config = ref.watch(configProvider);
       // 分类数据在首次加载后保持存活，避免 Home 滚动出视口再滑回时重复请求。
       ref.keepAlive();
-      return CategoryNotifier(repo, key);
+      return CategoryNotifier(repo, key, config.excludedTags.toSet());
     });
 
 class CategoryNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   final MangaRepository repo;
   final CategoryKey key;
+  final Set<String> excludedTags;
   int _page = 1;
   bool _loadingMore = false;
   bool _hasMore = true;
@@ -189,7 +209,8 @@ class CategoryNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _loadingMore;
 
-  CategoryNotifier(this.repo, this.key) : super(const AsyncValue.loading()) {
+  CategoryNotifier(this.repo, this.key, this.excludedTags)
+    : super(const AsyncValue.loading()) {
     load();
   }
 
@@ -216,6 +237,7 @@ class CategoryNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
         orderBy: key.orderBy,
         page: page,
       );
+      final visible = TagFilter.apply(results, excludedTags);
       if (results.isEmpty) {
         _hasMore = false;
       } else {
@@ -225,9 +247,9 @@ class CategoryNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
       if (mounted) {
         if (append) {
           final current = state.valueOrNull ?? [];
-          state = AsyncValue.data([...current, ...results]);
+          state = AsyncValue.data([...current, ...visible]);
         } else {
-          state = AsyncValue.data(results);
+          state = AsyncValue.data(visible);
         }
       }
     } catch (e, st) {
