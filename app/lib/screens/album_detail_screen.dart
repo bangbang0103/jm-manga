@@ -12,6 +12,7 @@ import '../widgets/animated_favorite_button.dart';
 import '../widgets/app_dropdown.dart';
 import '../widgets/error_placeholder.dart';
 import '../widgets/loading_indicator.dart';
+import '../widgets/retryable_image.dart';
 import '../widgets/tag_chip.dart';
 import '../providers/album_providers.dart';
 import '../providers/repository_provider.dart';
@@ -79,8 +80,8 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
               behavior: HitTestBehavior.translucent,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 48),
-                child: Image(
-                  image: imageProvider,
+                child: RetryableImage(
+                  imageProvider: imageProvider,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -269,19 +270,11 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                             borderRadius: BorderRadius.circular(12),
                             child: SizedBox(
                               width: 120,
-                              child: Image(
-                                image: repo.imageProvider(coverUrl),
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, progress) {
-                                  if (progress == null) return child;
-                                  return const SizedBox(
-                                    height: 180,
-                                    child: ImagePlaceholder(),
-                                  );
-                                },
-                                errorBuilder: (_, _, _) => const SizedBox(
-                                  height: 180,
-                                  child: ImageErrorPlaceholder(),
+                              child: AspectRatio(
+                                aspectRatio: 2 / 3,
+                                child: RetryableImage(
+                                  imageProvider: repo.imageProvider(coverUrl),
+                                  fit: BoxFit.cover,
                                 ),
                               ),
                             ),

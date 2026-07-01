@@ -88,7 +88,7 @@ flutter build ios --release --no-codesign
 ./scripts/sync-version.sh
 ```
 
-脚本会把版本同步到 `app/pubspec.yaml`，格式为 `<VERSION>+<build-number>`。
+脚本会把版本同步到 `app/pubspec.yaml`，格式为 `<VERSION>+<build-number>`，并同步 server 包版本文件，保持仓库版本源一致。
 
 ## 校验文件
 

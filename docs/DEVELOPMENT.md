@@ -28,12 +28,12 @@ scripts/
   release.sh                 统一发布构建入口（mobile / server / all）
   build-flutter.sh           Flutter 构建与 sha256 校验
   package-server.sh          将 server/ 已跟踪文件打包为 tar.gz / zip
-  sync-version.sh            将根 VERSION 同步到 pubspec.yaml
+  sync-version.sh            将根 VERSION 同步到 Flutter 与 server 版本文件
   test-flutter.sh            运行 Flutter 测试（自动设置 NO_PROXY）
 
 docs/
   ARCHITECTURE.md            架构说明
-  BUILDING-MOBILE.md         移动端构建说明
+  building-mobile.md         移动端构建说明
   CODEBASE.md                代码导航
   DEVELOPMENT.md             开发指南
   DESIGN.md                  设计系统
@@ -63,7 +63,7 @@ flutter run
 ./scripts/sync-version.sh
 ```
 
-该脚本会同步 `app/pubspec.yaml` 的版本号（保留 `+<build-number>`）。
+该脚本会同步 `app/pubspec.yaml` 的版本号（保留 `+<build-number>`），并同步 `server/pyproject.toml` 与 `server/uv.lock` 中的 server 包版本。
 
 ## 代码检查
 

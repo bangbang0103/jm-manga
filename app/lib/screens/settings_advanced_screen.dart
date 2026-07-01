@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/config_provider.dart';
 import '../utils/app_logger.dart';
+import '../widgets/beta_chip.dart';
 
 class SettingsAdvancedScreen extends ConsumerWidget {
   const SettingsAdvancedScreen({super.key});
@@ -122,7 +123,14 @@ class SettingsAdvancedScreen extends ConsumerWidget {
               const Divider(height: 1, indent: 16, endIndent: 16),
               ListTile(
                 leading: const Icon(Icons.dns_outlined),
-                title: Text(l10n.customDomainTitle),
+                title: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(child: Text(l10n.customDomainTitle)),
+                    const SizedBox(width: 8),
+                    const BetaChip(),
+                  ],
+                ),
                 subtitle: Text(
                   (config.customApiDomains.isNotEmpty ||
                           config.customImageDomains.isNotEmpty)

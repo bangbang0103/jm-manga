@@ -5,7 +5,7 @@
 JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS 与 Android。
 
 - **前端**：Flutter 客户端直接请求数据源接口与图片服务。
-- **可选自托管加速服务**：`server/` 目录下是一个基于 FastAPI + jmcomic 的 Python 服务。用户可将其部署在 VPS/NAS/本地，然后在 Flutter 客户端的「自定义域名」中把 API 域名与图片域名指向该服务，以获得缓存、线路优化等加速能力。该服务完全可选，不启用时 Flutter 客户端仍直连官方。
+- **可选自托管加速服务（BETA）**：`server/` 目录下是一个基于 FastAPI + jmcomic 的 Python 服务。用户可将其部署在 VPS/NAS/本地，然后在 Flutter 客户端的「自定义域名（BETA）」中把 API 域名与图片域名指向该服务，以获得缓存、线路优化等加速能力。该服务完全可选，不启用时 Flutter 客户端仍直连官方。
 - **本地存储**：`SecureStorage` 保存账号凭据和会话凭证；SQLite 保存收藏与阅读进度；SharedPreferences 保存代理、日志级别、主题、语言、搜索历史、图片缓存 LRU 元数据等非敏感配置。
 - **发布**：直接构建 APK/IPA 后安装即可使用。
 
@@ -13,13 +13,13 @@ JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS
 
 ## 版本管理
 
-根目录 `VERSION` 是应用版本源头，格式为 `x.y.z` 或 `x.y.z-prerelease`，不要包含 Flutter 的 `+<build-number>`。`app/pubspec.yaml` 使用 `<VERSION>+<build-number>` 格式，界面设置页通过 `package_info_plus` 读取。修改根 `VERSION` 后运行：
+根目录 `VERSION` 是应用版本源头，格式为 `x.y.z` 或 `x.y.z-prerelease`，不要包含 Flutter 的 `+<build-number>`。`app/pubspec.yaml` 使用 `<VERSION>+<build-number>` 格式，界面设置页通过 `package_info_plus` 读取；server 的 Python 包版本使用同一个 `VERSION`。修改根 `VERSION` 后运行：
 
 ```bash
 ./scripts/sync-version.sh
 ```
 
-该脚本仅同步 Flutter 版本号。
+该脚本会同步 Flutter 版本号、server `pyproject.toml` 和 `uv.lock` 中的本地包版本。
 
 ## 前端
 
@@ -80,9 +80,11 @@ JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS
 - 检测失败时自动检测静默；手动点击版本号失败时通过 `TopToast` 提示。
 - 检测到新版本后点击进入详情页，展示 release notes 并提供“立即下载”按钮跳转 GitHub Release 页面。
 
-## 自定义域名
+## 自定义域名（BETA）
 
-- 用户在 `Settings → Advanced → Custom Domain` 中分别设置多个 API 域名与图片域名，每行一个。
+> 该功能仍处于 BETA 阶段，接口与行为可能随版本调整。
+
+- 用户在 `Settings → Advanced → Custom Domain (BETA)` 中分别设置多个 API 域名与图片域名，每行一个。
 - 输入支持域名、`IP:port` 或完整 URL；缺失 scheme 时自动补全 `https://`。
 - 配置以 JSON 列表持久化到 `SharedPreferences`，通过 `configProvider` 注入 `JmClient`。
 - `JmClient` 按输入顺序将所有自定义域名主机排在域名列表前部，依次优先尝试；失败时按原有机制回退到自动更新或内置域名。
@@ -98,7 +100,7 @@ JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS
 ## 设计约束
 
 - 当前仅支持 iOS 与 Android。
-- 数据源接口的 token、版本、域名和加密协议可能变化，相关常量集中在 `app/lib/jm/` 管理。
+- 数据源接口的 token、版本、域名和加密协议可能变化，相关常量集中在 `app/lib/network/jm/` 管理。
 - `repos/` 目录下的参考源码仅用于本地查阅，不作为应用依赖打包。
 - 不提交真实 `.env`、数据库、缓存、签名文件或构建产物。
 
@@ -112,7 +114,7 @@ JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS
 
 - **技术栈**：Python 3.11+、FastAPI、uvicorn、jmcomic（async client）、uv。
 - **部署形态**：用户自托管（VPS/NAS/本地），提供 `Dockerfile`、`docker-compose.yml` 与裸 Python 启动脚本 `run.sh`。
-- **接入方式**：Flutter 客户端通过现有的「自定义域名」功能，将 API 域名与图片域名同时指向 server。Flutter 侧无需任何代码改动。
+- **接入方式**：Flutter 客户端通过现有的「自定义域名（BETA）」功能，将 API 域名与图片域名同时指向 server。Flutter 侧无需任何代码改动。
 - **接口兼容**：
   - API 路由完全按官方路径映射（`/search`、`/album`、`/chapter`、`/categories/filter`、`/favorite`、`/login` 等）。
   - `/chapter_view_template` 透传原始 HTML，供 Flutter 提取 `scramble_id`。

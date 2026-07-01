@@ -7,6 +7,7 @@ import '../providers/config_provider.dart';
 import '../utils/custom_domain_utils.dart';
 import '../utils/proxy_config.dart';
 import '../utils/top_toast.dart';
+import '../widgets/beta_chip.dart';
 
 class CustomDomainSettingsScreen extends ConsumerStatefulWidget {
   const CustomDomainSettingsScreen({super.key});
@@ -360,7 +361,14 @@ class _CustomDomainSettingsScreenState
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(l10n.customDomainTitle),
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.customDomainTitle),
+              const SizedBox(width: 8),
+              const BetaChip(),
+            ],
+          ),
         ),
         body: SafeArea(
           child: SingleChildScrollView(

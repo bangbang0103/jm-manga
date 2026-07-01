@@ -123,18 +123,16 @@ class _ImagePlaceholderState extends State<ImagePlaceholder>
   }
 }
 
-/// 图片加载失败占位。支持点击重试，并在有 [retryLabel] 时显示引导文案。
+/// 图片加载失败占位。支持点击重试。
 class ImageErrorPlaceholder extends StatelessWidget {
   final IconData icon;
   final String? message;
-  final String? retryLabel;
   final VoidCallback? onRetry;
 
   const ImageErrorPlaceholder({
     super.key,
     this.icon = Icons.broken_image,
     this.message,
-    this.retryLabel,
     this.onRetry,
   });
 
@@ -156,27 +154,6 @@ class ImageErrorPlaceholder extends StatelessWidget {
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onErrorContainer,
             ),
-          ),
-        ],
-        if (retryLabel != null) ...[
-          const SizedBox(height: 12),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.refresh,
-                size: 16,
-                color: theme.colorScheme.onErrorContainer,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                retryLabel!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onErrorContainer,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
           ),
         ],
       ],

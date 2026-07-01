@@ -53,6 +53,10 @@ app/android/.gradle/
 app/android/app/debug/
 app/android/app/profile/
 app/android/app/release/
+app/linux/
+app/macos/
+app/web/
+app/windows/
 
 # IDE
 .idea/

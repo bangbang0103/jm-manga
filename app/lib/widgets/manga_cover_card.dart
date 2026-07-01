@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'animated_favorite_button.dart';
-import 'loading_indicator.dart';
 import 'pressable.dart';
+import 'retryable_image.dart';
 
-class MangaCoverCard extends StatelessWidget {
+class MangaCoverCard extends StatefulWidget {
   final String title;
   final ImageProvider imageProvider;
   final String? badgeText;
@@ -23,6 +23,42 @@ class MangaCoverCard extends StatelessWidget {
   });
 
   @override
+  State<MangaCoverCard> createState() => _MangaCoverCardState();
+}
+
+class _MangaCoverCardState extends State<MangaCoverCard> {
+  final _imageKey = GlobalKey<RetryableImageState>();
+  bool _hasError = false;
+  bool _isRetrying = false;
+
+  void _onError() {
+    if (mounted && !_hasError) {
+      setState(() {
+        _hasError = true;
+        _isRetrying = false;
+      });
+    }
+  }
+
+  void _onLoad() {
+    if (mounted && (_hasError || _isRetrying)) {
+      setState(() {
+        _hasError = false;
+        _isRetrying = false;
+      });
+    }
+  }
+
+  void _retryImage() {
+    if (_isRetrying) return;
+    setState(() {
+      _hasError = false;
+      _isRetrying = true;
+    });
+    _imageKey.currentState?.retry();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
@@ -36,17 +72,29 @@ class MangaCoverCard extends StatelessWidget {
             Positioned.fill(
               child: Container(
                 color: theme.colorScheme.surfaceContainerHighest,
-                child: Image(
-                  image: imageProvider,
+                child: RetryableImage(
+                  key: _imageKey,
+                  imageProvider: widget.imageProvider,
                   fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const ImagePlaceholder();
-                  },
-                  errorBuilder: (_, _, _) => const ImageErrorPlaceholder(),
+                  showRetryInPlaceholder: false,
+                  onError: _onError,
+                  onLoad: _onLoad,
                 ),
               ),
             ),
+            if (_isRetrying)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    ),
+                  ),
+                ),
+              ),
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -67,7 +115,7 @@ class MangaCoverCard extends StatelessWidget {
               left: 12,
               right: 12,
               child: Text(
-                title,
+                widget.title,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -76,7 +124,7 @@ class MangaCoverCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (badgeText != null)
+            if (widget.badgeText != null)
               Positioned(
                 top: 8,
                 left: 8,
@@ -90,38 +138,64 @@ class MangaCoverCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    badgeText!,
+                    widget.badgeText!,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onPrimaryContainer,
                     ),
                   ),
                 ),
               ),
-            if (onFavorite != null)
-              Positioned(
-                bottom: 8,
-                right: 8,
-                child: Material(
-                  color: theme.colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(20),
-                  child: AnimatedFavoriteButton(
-                    isFavorite: isFavorite,
-                    onPressed: onFavorite,
-                    size: 20,
-                    padding: const EdgeInsets.all(8),
-                    color: theme.colorScheme.secondary,
-                    inactiveColor: theme.colorScheme.onSurface,
-                  ),
-                ),
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Material(
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(20),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: _retryImage,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.refresh,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (widget.onFavorite != null)
+                    Material(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      child: AnimatedFavoriteButton(
+                        isFavorite: widget.isFavorite,
+                        onPressed: widget.onFavorite,
+                        size: 20,
+                        padding: const EdgeInsets.all(8),
+                        color: theme.colorScheme.secondary,
+                        inactiveColor: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                ],
               ),
+            ),
           ],
         ),
       ),
     );
 
-    if (onTap != null) {
-      card = Pressable(onTap: onTap, child: card);
+    if (widget.onTap != null) {
+      card = Pressable(onTap: widget.onTap, child: card);
     }
 
     return card;

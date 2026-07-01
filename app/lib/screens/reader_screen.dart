@@ -436,7 +436,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
                       aspectRatio: 0.7,
                       child: ImageErrorPlaceholder(
                         message: l10n.imageLoadFailed,
-                        retryLabel: l10n.imageLoadRetryHint,
                         onRetry: () {
                           if (_repo is DirectMangaRepository) {
                             _repo.imageService.clearBackoff();

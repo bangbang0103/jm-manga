@@ -135,4 +135,4 @@ esac
 
 echo ""
 echo "==> Release artifacts for v${version}:"
-ls -1 "${OUT_ROOT}" | grep -E "(${APP_NAME}|${SERVER_APP_NAME})-v${version}[-.]" || true
+ls -1 "${OUT_ROOT}" | grep -E "(${APP_NAME}-(apk|unsigned-ipa|unsigned-app)-v${version}|${SERVER_APP_NAME}-v${version})[-.]" || true

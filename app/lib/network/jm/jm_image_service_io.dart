@@ -136,9 +136,7 @@ class JmImageService {
 
   List<String> _availableImageDomains({String? exclude}) {
     final domains = _client?.imageDomains ?? const <String>[];
-    return domains
-        .where((d) => d != exclude && !_isInBackoff(d))
-        .toList();
+    return domains.where((d) => d != exclude && !_isInBackoff(d)).toList();
   }
 
   /// 为 [client] 创建独立的图片下载 Dio，避免挤占 API 连接的连接池，
@@ -232,10 +230,7 @@ class JmImageService {
             'JM IMG preferred host $host failed for ${uri.path}, '
             'trying other domains',
           );
-          final fallback = await _fetchFromOtherDomains(
-            uri,
-            exclude: host,
-          );
+          final fallback = await _fetchFromOtherDomains(uri, exclude: host);
           if (fallback != null) {
             globalLogger.i(
               'JM IMG fallback succeeded: ${fallback.host} for ${uri.path}',
@@ -363,10 +358,12 @@ class JmImageService {
     }
 
     final customHosts = _client?.customImageHosts ?? const <String>{};
-    final customDomains =
-        allDomains.where((d) => customHosts.contains(d)).toList();
-    final officialDomains =
-        allDomains.where((d) => !customHosts.contains(d)).toList();
+    final customDomains = allDomains
+        .where((d) => customHosts.contains(d))
+        .toList();
+    final officialDomains = allDomains
+        .where((d) => !customHosts.contains(d))
+        .toList();
 
     // 优先在自定义图片域名之间赛马。
     if (customDomains.isNotEmpty) {
@@ -399,16 +396,18 @@ class JmImageService {
     if (customUri != null) {
       return customUri.replace(
         path: original.path,
-        queryParameters:
-            original.queryParameters.isEmpty ? null : original.queryParameters,
+        queryParameters: original.queryParameters.isEmpty
+            ? null
+            : original.queryParameters,
       );
     }
     return Uri(
       scheme: 'https',
       host: domain,
       path: original.path,
-      queryParameters:
-          original.queryParameters.isEmpty ? null : original.queryParameters,
+      queryParameters: original.queryParameters.isEmpty
+          ? null
+          : original.queryParameters,
     );
   }
 
@@ -691,6 +690,7 @@ class JmImageCache {
         .millisecondsSinceEpoch;
 
     final lru = await _lru.readAll();
+    final lruPrefix = cover ? 'cover:' : 'image:';
     final entries = <_CacheEntry>[];
     final urlsToRemoveFromLru = <String>[];
     var totalSize = 0;
@@ -703,14 +703,17 @@ class JmImageCache {
       final lastAccess = lru[url];
       if (lastAccess == null) {
         // 文件存在但 LRU 中没有：补录为当前时间，避免误删。
-        entries.add(_CacheEntry(url, entity, size, DateTime.now().millisecondsSinceEpoch));
+        entries.add(
+          _CacheEntry(url, entity, size, DateTime.now().millisecondsSinceEpoch),
+        );
       } else {
         entries.add(_CacheEntry(url, entity, size, lastAccess));
       }
     }
 
-    // 同步 LRU：删除 map 中已不存在的文件记录。
+    // 同步当前类型的 LRU：不要清掉另一类缓存的记录。
     for (final url in lru.keys) {
+      if (!url.startsWith(lruPrefix)) continue;
       final exists = entries.any((e) => e.url == url);
       if (!exists) urlsToRemoveFromLru.add(url);
     }
@@ -732,7 +735,9 @@ class JmImageCache {
 
     // 智能清理：删除过期未访问文件。
     entries.sort((a, b) => a.lastAccess.compareTo(b.lastAccess));
-    final staleEntries = entries.where((e) => e.lastAccess < staleThreshold).toList();
+    final staleEntries = entries
+        .where((e) => e.lastAccess < staleThreshold)
+        .toList();
     for (final entry in staleEntries) {
       try {
         await entry.file.delete();
@@ -890,4 +895,3 @@ class _BackoffEntry {
   _BackoffEntry({required this.failureCount, DateTime? lastFailedAt})
     : lastFailedAt = lastFailedAt ?? DateTime.now();
 }
-
