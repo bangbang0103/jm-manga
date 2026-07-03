@@ -47,6 +47,40 @@
   "favoriteSyncNow": "立即同步",
   "recentEmpty": "暂无阅读记录",
   "recentBrowseManga": "去逛逛",
+  "recentSearchHint": "搜索阅读记录",
+  "recentEdit": "编辑",
+  "recentDone": "完成",
+  "recentSelectAll": "全选",
+  "recentDeselectAll": "取消全选",
+  "recentDelete": "删除 ({count})",
+  "@recentDelete": {
+    "description": "Bottom bar delete button with selected count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recentDeleted": "已删除 {count} 本漫画的阅读记录",
+  "@recentDeleted": {
+    "description": "Toast after deleting recent reading records",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recentUndo": "撤销",
+  "recentSelectedCount": "已选择 {count} 项",
+  "@recentSelectedCount": {
+    "description": "AppBar title in recent read edit mode",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recentSearchEmpty": "未找到匹配的阅读记录",
   "rankingsTitle": "排行榜",
   "periodDay": "日榜",
   "periodWeek": "周榜",
@@ -127,6 +161,7 @@
   "badgePercent": "{percent}%",
   "badgeChapterPercent": "{chapter}·{percent}%",
   "badgeChapterFinished": "{chapter}-100%",
+  "chapterUnread": "未读",
   "logsTitle": "日志",
   "logsExport": "导出日志",
   "logsClear": "清空日志",

@@ -48,9 +48,13 @@ abstract interface class MangaRepository {
 
   Future<List<ReadingProgress>> getRecentProgress();
 
+  Future<List<ReadingProgress>> searchRecentProgress(String query);
+
   Future<List<ReadingProgress>> getAlbumProgress(String albumId);
 
   Future<void> syncProgress(ReadingProgress progress);
+
+  Future<void> deleteRecentProgress(List<String> albumIds);
 
   Future<Map<String, dynamic>> checkHealth();
 

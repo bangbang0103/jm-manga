@@ -66,6 +66,66 @@ class LocalMangaRecords {
     return rows.map(_rowToProgress).toList();
   }
 
+  Future<int> deleteAlbumProgress(String ownerKey, String albumId) async {
+    final db = await _db;
+    return db.delete(
+      'reading_progress',
+      where: 'owner_key = ? AND album_id = ?',
+      whereArgs: [ownerKey, albumId],
+    );
+  }
+
+  Future<int> deleteAlbumProgressList(
+    String ownerKey,
+    List<String> albumIds,
+  ) async {
+    if (albumIds.isEmpty) return 0;
+    final db = await _db;
+    var total = 0;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final albumId in albumIds) {
+        batch.delete(
+          'reading_progress',
+          where: 'owner_key = ? AND album_id = ?',
+          whereArgs: [ownerKey, albumId],
+        );
+      }
+      final results = await batch.commit(continueOnError: false);
+      for (final result in results) {
+        if (result is int) total += result;
+      }
+    });
+    return total;
+  }
+
+  Future<List<ReadingProgress>> searchRecentProgress(
+    String ownerKey,
+    String query, {
+    int limit = 20,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return recentProgress(ownerKey, limit: limit);
+    }
+    final db = await _db;
+    final pattern = '%$trimmed%';
+    final rows = await db.rawQuery('''
+      SELECT r.*
+      FROM reading_progress r
+      INNER JOIN (
+        SELECT album_id, MAX(last_read_at) AS max_last_read_at
+        FROM reading_progress
+        WHERE owner_key = ? AND LOWER(title) LIKE LOWER(?)
+        GROUP BY album_id
+      ) latest ON r.album_id = latest.album_id AND r.last_read_at = latest.max_last_read_at
+      WHERE r.owner_key = ?
+      ORDER BY r.last_read_at DESC
+      LIMIT ?
+    ''', [ownerKey, pattern, ownerKey, limit]);
+    return rows.map(_rowToProgress).toList();
+  }
+
   // Favorites
 
   Future<void> upsertFavorite(

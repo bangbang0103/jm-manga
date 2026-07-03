@@ -192,7 +192,7 @@ class TagQueryParser {
   }
 
   static String _compareTag(String input) {
-    return _normalizeTag(input).toLowerCase();
+    return _normalizeTag(input);
   }
 
   static void _removeTag(Set<String> tags, String tag) {

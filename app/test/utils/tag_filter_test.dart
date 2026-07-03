@@ -25,15 +25,20 @@ void main() {
         AlbumItem(albumId: '1', title: 'Keep This', tags: const []),
         AlbumItem(albumId: '2', title: '[Block] This', tags: const []),
       ];
-      final result = TagFilter.apply(titleItems, {'block'});
+      final result = TagFilter.apply(titleItems, {'Block'});
       expect(result.length, 1);
       expect(result.first.albumId, '1');
     });
 
-    test('matches case-insensitively and trims whitespace', () {
-      final result = TagFilter.apply(items, {'  block ', 'BLOCK'});
+    test('trims whitespace but matches case-sensitively', () {
+      final result = TagFilter.apply(items, {'  Block '});
       expect(result.length, 1);
       expect(result.first.albumId, '1');
+    });
+
+    test('does not match different case', () {
+      final result = TagFilter.apply(items, {'block'});
+      expect(result.length, 3);
     });
   });
 }

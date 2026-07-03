@@ -71,6 +71,9 @@ class FakeApiRepository implements MangaRepository {
   ];
 
   @override
+  Future<List<ReadingProgress>> searchRecentProgress(String query) async => [];
+
+  @override
   Future<List<ReadingProgress>> getAlbumProgress(String albumId) async => [
     ReadingProgress(
       albumId: albumId,
@@ -81,6 +84,9 @@ class FakeApiRepository implements MangaRepository {
       lastReadAt: '2026-06-16',
     ),
   ];
+
+  @override
+  Future<void> deleteRecentProgress(List<String> albumIds) async {}
 
   @override
   String coverUrl(String albumId, {String size = ''}) => '';

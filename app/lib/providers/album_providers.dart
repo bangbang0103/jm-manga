@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/manga_repository.dart';
@@ -373,12 +375,85 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   }
 }
 
-final readingProgressProvider = FutureProvider<List<ReadingProgress>>((
-  ref,
-) async {
+final readingProgressProvider = StateNotifierProvider<
+  RecentReadNotifier,
+  AsyncValue<List<ReadingProgress>>
+>((ref) {
   final repo = ref.watch(apiRepositoryProvider);
-  return repo.getRecentProgress();
+  return RecentReadNotifier(repo);
 });
+
+class RecentReadNotifier
+    extends StateNotifier<AsyncValue<List<ReadingProgress>>> {
+  final MangaRepository _repo;
+  String _query = '';
+  Timer? _debounceTimer;
+
+  RecentReadNotifier(this._repo) : super(const AsyncValue.loading()) {
+    unawaited(load());
+  }
+
+  String get query => _query;
+
+  Future<void> load() async {
+    _query = '';
+    _cancelDebounce();
+    if (!mounted) return;
+    state = const AsyncValue.loading();
+    await _fetch((repo) => repo.getRecentProgress());
+  }
+
+  void search(String query) {
+    final trimmed = query.trim();
+    _query = query;
+    _cancelDebounce();
+    if (trimmed.isEmpty) {
+      unawaited(load());
+      return;
+    }
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () async {
+      await _fetch((repo) => repo.searchRecentProgress(trimmed));
+    });
+  }
+
+  Future<void> refresh() async {
+    _cancelDebounce();
+    final trimmed = _query.trim();
+    if (trimmed.isEmpty) {
+      await _fetch((repo) => repo.getRecentProgress());
+    } else {
+      await _fetch((repo) => repo.searchRecentProgress(trimmed));
+    }
+  }
+
+  Future<void> delete(List<String> albumIds) async {
+    _cancelDebounce();
+    await _repo.deleteRecentProgress(albumIds);
+    await refresh();
+  }
+
+  Future<void> _fetch(
+    Future<List<ReadingProgress>> Function(MangaRepository repo) fetch,
+  ) async {
+    try {
+      final results = await fetch(_repo);
+      if (mounted) state = AsyncValue.data(results);
+    } catch (e, st) {
+      if (mounted) state = AsyncValue.error(e, st);
+    }
+  }
+
+  void _cancelDebounce() {
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
+  }
+
+  @override
+  void dispose() {
+    _cancelDebounce();
+    super.dispose();
+  }
+}
 
 final albumProgressProvider =
     FutureProvider.family<List<ReadingProgress>, String>((ref, albumId) async {

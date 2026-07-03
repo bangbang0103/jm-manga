@@ -297,7 +297,7 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
   }
 
   static String normalizeTag(String tag) {
-    return tag.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    return tag.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 }
 

@@ -5,9 +5,8 @@ import 'package:jm_manga/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../widgets/loading_indicator.dart';
-
 import '../models/album.dart';
+import '../models/reading_progress.dart';
 import '../providers/account_provider.dart';
 import '../providers/album_providers.dart';
 import '../providers/config_provider.dart';
@@ -17,6 +16,7 @@ import '../utils/error_mapper.dart';
 import '../utils/favorite_action.dart';
 import '../utils/top_toast.dart';
 import '../widgets/animations/staggered_grid.dart';
+import '../widgets/loading_indicator.dart';
 import '../widgets/manga_cover_card.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -33,6 +33,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   late final TabController _tabController;
   bool _isSyncing = false;
 
+  // Recent read: search + batch delete + undo
+  final _recentSearchController = TextEditingController();
+  bool _isEditingRecent = false;
+  final Set<String> _selectedAlbumIds = <String>{};
+  bool _isDeleting = false;
+  Map<String, List<ReadingProgress>> _lastDeleted = {};
+  bool _showUndo = false;
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +54,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _recentSearchController.dispose();
     super.dispose();
   }
 
@@ -59,12 +68,23 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }
 
   void _onTabTapped(int index) {
-    setState(() {});
+    setState(() {
+      _resetRecentEditState();
+      _recentSearchController.clear();
+    });
     if (index == 0) {
       unawaited(ref.read(favoritesProvider.notifier).refresh());
     } else {
-      unawaited(ref.refresh(readingProgressProvider.future));
+      unawaited(ref.read(readingProgressProvider.notifier).load());
     }
+  }
+
+  void _resetRecentEditState() {
+    _isEditingRecent = false;
+    _selectedAlbumIds.clear();
+    _isDeleting = false;
+    _lastDeleted = {};
+    _showUndo = false;
   }
 
   Future<void> _syncFavoritesWithFeedback() async {
@@ -104,6 +124,112 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     }
   }
 
+  void _enterRecentEditMode({String? selectAlbumId}) {
+    setState(() {
+      _isEditingRecent = true;
+      _showUndo = false;
+      if (selectAlbumId != null) {
+        _selectedAlbumIds.add(selectAlbumId);
+      }
+    });
+  }
+
+  void _toggleSelection(String albumId) {
+    if (_isDeleting) return;
+    setState(() {
+      if (_selectedAlbumIds.contains(albumId)) {
+        _selectedAlbumIds.remove(albumId);
+      } else {
+        _selectedAlbumIds.add(albumId);
+      }
+    });
+  }
+
+  void _selectAll(Iterable<String> albumIds) {
+    if (_isDeleting) return;
+    setState(() => _selectedAlbumIds.addAll(albumIds));
+  }
+
+  void _deselectAll() {
+    if (_isDeleting) return;
+    setState(() => _selectedAlbumIds.clear());
+  }
+
+  Future<void> _deleteSelected() async {
+    if (_selectedAlbumIds.isEmpty || _isDeleting) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final repo = ref.read(apiRepositoryProvider);
+    final notifier = ref.read(readingProgressProvider.notifier);
+
+    // Backup progress for undo.
+    final backup = <String, List<ReadingProgress>>{};
+    for (final albumId in _selectedAlbumIds) {
+      backup[albumId] = await repo.getAlbumProgress(albumId);
+    }
+
+    setState(() => _isDeleting = true);
+    try {
+      await notifier.delete(_selectedAlbumIds.toList());
+      if (mounted) {
+        setState(() {
+          _lastDeleted = backup;
+          _showUndo = true;
+          _resetSelectionOnly();
+        });
+        TopToast.show(
+          context,
+          l10n.recentDeleted(_lastDeleted.length),
+          type: TopToastType.success,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        TopToast.show(
+          context,
+          mapErrorToUserMessage(e, l10n),
+          type: TopToastType.error,
+        );
+      }
+    }
+  }
+
+  void _resetSelectionOnly() {
+    _isEditingRecent = false;
+    _selectedAlbumIds.clear();
+    _isDeleting = false;
+  }
+
+  Future<void> _undoDelete() async {
+    if (!_showUndo || _lastDeleted.isEmpty) return;
+
+    final repo = ref.read(apiRepositoryProvider);
+    final notifier = ref.read(readingProgressProvider.notifier);
+
+    for (final progresses in _lastDeleted.values) {
+      for (final progress in progresses) {
+        await repo.syncProgress(progress);
+      }
+    }
+    await notifier.refresh();
+
+    if (mounted) {
+      setState(() {
+        _lastDeleted = {};
+        _showUndo = false;
+      });
+    }
+  }
+
+  Future<void> _handleRecentRefresh() async {
+    setState(() {
+      _resetRecentEditState();
+      _recentSearchController.clear();
+    });
+    await ref.read(readingProgressProvider.notifier).load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -119,9 +245,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     final favoritesNotifier = ref.read(favoritesProvider.notifier);
     final repo = ref.read(apiRepositoryProvider);
 
+    final recentItems = reading.valueOrNull ?? <ReadingProgress>[];
+    final recentAlbumIds = recentItems.map((p) => p.albumId).toList();
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.libraryTitle),
+        title: _isEditingRecent
+            ? Text(l10n.recentSelectedCount(_selectedAlbumIds.length))
+            : Text(l10n.libraryTitle),
         bottom: TabBar(
           controller: _tabController,
           onTap: _onTabTapped,
@@ -131,6 +262,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           ],
         ),
       ),
+      bottomNavigationBar: _isEditingRecent
+          ? _buildRecentEditBottomBar(recentAlbumIds)
+          : null,
       body: Column(
         children: [
           if (_tabController.index == 0 && hasAccount)
@@ -155,6 +289,35 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onChanged: (value) => favoritesNotifier.search(value),
+              ),
+            ),
+          if (_tabController.index == 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _recentSearchController,
+                      enabled: !_isEditingRecent,
+                      decoration: InputDecoration(
+                        hintText: l10n.recentSearchHint,
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onChanged: (value) => ref
+                          .read(readingProgressProvider.notifier)
+                          .search(value),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildRecentEditOrUndoButton(recentItems.isNotEmpty),
+                ],
               ),
             ),
           Expanded(
@@ -182,7 +345,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 ),
                 _buildAlbumGrid(
                   asyncItems: reading,
-                  onRefresh: () => ref.refresh(readingProgressProvider.future),
+                  onRefresh: _handleRecentRefresh,
                   coverUrlFor: (progress) => repo.coverUrl(progress.albumId),
                   titleFor: (progress) =>
                       progress.title ?? 'Album ${progress.albumId}',
@@ -194,16 +357,95 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                     title: progress.title ?? 'Album ${progress.albumId}',
                     tags: const [],
                   ),
-                  emptyMessage: l10n.recentEmpty,
-                  emptyAction: (
-                    label: l10n.recentBrowseManga,
-                    onPressed: () => context.go('/?tab=home'),
+                  emptyMessage: _recentSearchController.text.trim().isEmpty
+                      ? l10n.recentEmpty
+                      : l10n.recentSearchEmpty,
+                  emptyAction: _recentSearchController.text.trim().isEmpty
+                      ? (
+                          label: l10n.recentBrowseManga,
+                          onPressed: () => context.go('/?tab=home'),
+                        )
+                      : null,
+                  isEditing: _isEditingRecent,
+                  selectedIds: _selectedAlbumIds,
+                  onToggleSelection: _toggleSelection,
+                  onLongPress: (progress) => _enterRecentEditMode(
+                    selectAlbumId: progress.albumId,
                   ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRecentEditOrUndoButton(bool hasItems) {
+    final l10n = AppLocalizations.of(context)!;
+
+    if (_showUndo) {
+      return TextButton(
+        onPressed: _undoDelete,
+        child: Text(l10n.recentUndo),
+      );
+    }
+
+    return TextButton(
+      onPressed: _isEditingRecent || hasItems
+          ? () {
+              if (_isEditingRecent) {
+                setState(_resetRecentEditState);
+              } else {
+                _enterRecentEditMode();
+              }
+            }
+          : null,
+      child: Text(_isEditingRecent ? l10n.recentDone : l10n.recentEdit),
+    );
+  }
+
+  Widget _buildRecentEditBottomBar(List<String> visibleAlbumIds) {
+    final l10n = AppLocalizations.of(context)!;
+    final allSelected = visibleAlbumIds.isNotEmpty &&
+        visibleAlbumIds.every(_selectedAlbumIds.contains);
+
+    return BottomAppBar(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              const Spacer(),
+              TextButton(
+                onPressed: _isDeleting
+                    ? null
+                    : allSelected
+                        ? _deselectAll
+                        : () => _selectAll(visibleAlbumIds),
+                child: Text(
+                  allSelected ? l10n.recentDeselectAll : l10n.recentSelectAll,
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _isDeleting || _selectedAlbumIds.isEmpty
+                    ? null
+                    : _deleteSelected,
+                child: _isDeleting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(l10n.recentDelete(_selectedAlbumIds.length)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -220,6 +462,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     AlbumItem Function(T item)? itemForFavorite,
     required String emptyMessage,
     ({String label, VoidCallback onPressed})? emptyAction,
+    bool isEditing = false,
+    Set<String> selectedIds = const <String>{},
+    ValueChanged<String>? onToggleSelection,
+    ValueChanged<T>? onLongPress,
   }) {
     final l10n = AppLocalizations.of(context)!;
     final favoriteIdsAsync = ref.watch(favoriteAlbumIdsProvider);
@@ -275,24 +521,60 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               staggerDelay: const Duration(milliseconds: 35),
               itemBuilder: (context, item, index) {
                 final albumId = albumIdFor?.call(item);
-                final isFavorite =
-                    albumId != null &&
+                final isSelected =
+                    albumId != null && selectedIds.contains(albumId);
+                final isFavorite = albumId != null &&
                     (favoriteIdsAsync.valueOrNull?.contains(albumId) ?? false);
-                return MangaCoverCard(
+
+                Widget card = MangaCoverCard(
                   title: titleFor(item),
                   badgeText: badgeTextFor?.call(item),
                   imageProvider: repo.imageProvider(coverUrlFor(item)),
                   isFavorite: isFavorite,
-                  onTap: () => context.push(routeFor(item)),
-                  onFavorite: albumId != null
-                      ? () => toggleFavoriteAction(
+                  onTap: isEditing && albumId != null
+                      ? () => onToggleSelection?.call(albumId)
+                      : () => context.push(routeFor(item)),
+                  onFavorite: isEditing || albumId == null
+                      ? null
+                      : () => toggleFavoriteAction(
                           context,
                           ref,
                           albumId: albumId,
                           item: itemForFavorite?.call(item),
-                        )
-                      : null,
+                        ),
                 );
+
+                if (isEditing && albumId != null) {
+                  card = Stack(
+                    children: [
+                      card,
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Transform.scale(
+                          scale: 1.25,
+                          child: Checkbox(
+                            value: isSelected,
+                            onChanged: (_) => onToggleSelection?.call(albumId),
+                            shape: const CircleBorder(),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                if (onLongPress != null && !isEditing) {
+                  card = GestureDetector(
+                    onLongPress: () => onLongPress(item),
+                    behavior: HitTestBehavior.translucent,
+                    child: card,
+                  );
+                }
+
+                return card;
               },
             ),
           );

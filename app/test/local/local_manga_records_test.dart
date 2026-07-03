@@ -120,6 +120,96 @@ void main() {
       // 内存数据库没有文件路径，database 大小可能为 0；真实设备上为数据库文件大小。
       expect(sizes['database'], greaterThanOrEqualTo(0));
     });
+
+    test('deleteAlbumProgress removes only matching album and owner', () async {
+      await records.saveProgress(
+        'jm:alice',
+        progress(albumId: '1', photoId: 'p1', lastReadAt: '2026-01-01T00:00:00Z'),
+      );
+      await records.saveProgress(
+        'jm:alice',
+        progress(albumId: '1', photoId: 'p2', lastReadAt: '2026-01-02T00:00:00Z'),
+      );
+      await records.saveProgress(
+        'jm:alice',
+        progress(albumId: '2', photoId: 'p3', lastReadAt: '2026-01-03T00:00:00Z'),
+      );
+      await records.saveProgress(
+        'jm:bob',
+        progress(albumId: '1', photoId: 'p4', lastReadAt: '2026-01-04T00:00:00Z'),
+      );
+
+      final deleted = await records.deleteAlbumProgress('jm:alice', '1');
+      expect(deleted, 2);
+
+      final recent = await records.recentProgress('jm:alice');
+      expect(recent.map((r) => r.albumId), ['2']);
+
+      final otherOwner = await records.recentProgress('jm:bob');
+      expect(otherOwner.single.albumId, '1');
+    });
+
+    test('deleteAlbumProgressList removes multiple albums', () async {
+      await records.saveProgress(
+        'jm:alice',
+        progress(albumId: '1', photoId: 'p1', lastReadAt: '2026-01-01T00:00:00Z'),
+      );
+      await records.saveProgress(
+        'jm:alice',
+        progress(albumId: '2', photoId: 'p2', lastReadAt: '2026-01-02T00:00:00Z'),
+      );
+      await records.saveProgress(
+        'jm:alice',
+        progress(albumId: '3', photoId: 'p3', lastReadAt: '2026-01-03T00:00:00Z'),
+      );
+
+      final deleted = await records.deleteAlbumProgressList(
+        'jm:alice',
+        ['1', '2'],
+      );
+      expect(deleted, 2);
+
+      final recent = await records.recentProgress('jm:alice');
+      expect(recent.single.albumId, '3');
+    });
+
+    test('searchRecentProgress filters by title case-insensitively', () async {
+      await records.saveProgress(
+        'jm:alice',
+        progress(
+          albumId: '1',
+          photoId: 'p1',
+          title: 'NTR Academy',
+          lastReadAt: '2026-01-01T00:00:00Z',
+        ),
+      );
+      await records.saveProgress(
+        'jm:alice',
+        progress(
+          albumId: '2',
+          photoId: 'p2',
+          title: 'Safe Title',
+          lastReadAt: '2026-01-02T00:00:00Z',
+        ),
+      );
+      await records.saveProgress(
+        'jm:alice',
+        progress(
+          albumId: '1',
+          photoId: 'p3',
+          title: 'NTR Academy',
+          lastReadAt: '2026-01-03T00:00:00Z',
+        ),
+      );
+
+      final results = await records.searchRecentProgress('jm:alice', 'ntr');
+      expect(results, hasLength(1));
+      expect(results.single.albumId, '1');
+      expect(results.single.photoId, 'p3');
+
+      final empty = await records.searchRecentProgress('jm:alice', 'missing');
+      expect(empty, isEmpty);
+    });
   });
 }
 
@@ -127,11 +217,12 @@ ReadingProgress progress({
   required String albumId,
   required String photoId,
   required String lastReadAt,
+  String? title,
 }) {
   return ReadingProgress(
     albumId: albumId,
     photoId: photoId,
-    title: 'Chapter $photoId',
+    title: title ?? 'Chapter $photoId',
     imageIndex: 1,
     isFinished: false,
     lastReadAt: lastReadAt,

@@ -47,6 +47,40 @@
   "favoriteSyncNow": "Sync now",
   "recentEmpty": "No reading history yet",
   "recentBrowseManga": "Browse manga",
+  "recentSearchHint": "Search reading history",
+  "recentEdit": "Edit",
+  "recentDone": "Done",
+  "recentSelectAll": "Select All",
+  "recentDeselectAll": "Deselect All",
+  "recentDelete": "Delete ({count})",
+  "@recentDelete": {
+    "description": "Bottom bar delete button with selected count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recentDeleted": "Deleted reading history for {count} manga",
+  "@recentDeleted": {
+    "description": "Toast after deleting recent reading records",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recentUndo": "Undo",
+  "recentSelectedCount": "{count} selected",
+  "@recentSelectedCount": {
+    "description": "AppBar title in recent read edit mode",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recentSearchEmpty": "No matching reading history",
   "rankingsTitle": "Rankings",
   "periodDay": "Day",
   "periodWeek": "Week",
@@ -179,6 +213,7 @@
       "chapter": {}
     }
   },
+  "chapterUnread": "Unread",
   "logsTitle": "Logs",
   "logsExport": "Export logs",
   "logsClear": "Clear logs",

@@ -4,11 +4,11 @@ import 'app_logger.dart';
 /// 按排除 tag 列表过滤漫画条目。
 ///
 /// 由于列表接口（搜索 / 分类 / 排行）通常不返回 `tags`，匹配会同时检查标题；
-/// 当条目本身带有 tag 时也会一并检查。比较时忽略大小写与首尾空格。
+/// 当条目本身带有 tag 时也会一并检查。比较时保留大小写，仅去除首尾空格。
 class TagFilter {
   TagFilter._();
 
-  static String _normalize(String text) => text.trim().toLowerCase();
+  static String _normalize(String text) => text.trim();
 
   static List<AlbumItem> apply(
     List<AlbumItem> items,

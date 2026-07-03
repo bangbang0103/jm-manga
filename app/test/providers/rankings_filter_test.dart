@@ -24,7 +24,7 @@ class _RankingsRepo extends FakeApiRepository {
 void main() {
   test('rankingsProvider filters by excluded tags from config', () async {
     SharedPreferences.setMockInitialValues({
-      'excludedTags': jsonEncode(['block']),
+      'excludedTags': jsonEncode(['Block']),
     });
 
     final repo = _RankingsRepo();

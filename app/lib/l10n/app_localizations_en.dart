@@ -138,6 +138,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recentBrowseManga => 'Browse manga';
 
   @override
+  String get recentSearchHint => 'Search reading history';
+
+  @override
+  String get recentEdit => 'Edit';
+
+  @override
+  String get recentDone => 'Done';
+
+  @override
+  String get recentSelectAll => 'Select All';
+
+  @override
+  String get recentDeselectAll => 'Deselect All';
+
+  @override
+  String recentDelete(int count) {
+    return 'Delete ($count)';
+  }
+
+  @override
+  String recentDeleted(int count) {
+    return 'Deleted reading history for $count manga';
+  }
+
+  @override
+  String get recentUndo => 'Undo';
+
+  @override
+  String recentSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get recentSearchEmpty => 'No matching reading history';
+
+  @override
   String get rankingsTitle => 'Rankings';
 
   @override
@@ -400,6 +436,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String badgeChapterFinished(Object chapter) {
     return '$chapter-100%';
   }
+
+  @override
+  String get chapterUnread => 'Unread';
 
   @override
   String get logsTitle => 'Logs';

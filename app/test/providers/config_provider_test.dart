@@ -127,10 +127,10 @@ void main() {
 
       await notifier.setExcludedTags(['全彩', '  全彩  ', 'AI生成']);
 
-      expect(notifier.state.excludedTags, ['全彩', 'ai生成']);
+      expect(notifier.state.excludedTags, ['全彩', 'AI生成']);
       final prefs = await SharedPreferences.getInstance();
       final stored = jsonDecode(prefs.getString('excludedTags')!) as List;
-      expect(stored, ['全彩', 'ai生成']);
+      expect(stored, ['全彩', 'AI生成']);
     });
 
     test('empty list clears excluded tags', () async {

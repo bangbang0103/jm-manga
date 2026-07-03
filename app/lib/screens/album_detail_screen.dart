@@ -130,28 +130,6 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
     return null;
   }
 
-  Widget _buildProgressBar(ThemeData theme, int? percent) {
-    if (percent == null) return const SizedBox.shrink();
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-      child: Stack(
-        children: [
-          Container(
-            height: 4,
-            color: theme.colorScheme.surfaceContainerHighest,
-          ),
-          FractionallySizedBox(
-            widthFactor: percent / 100,
-            child: Container(
-              height: 4,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   ReadingProgress? _findProgress(
     List<ReadingProgress> progressList,
     String photoId,
@@ -187,6 +165,17 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
     }
 
     return episodes.first['photo_id'] as String?;
+  }
+
+  String _chapterStatusText(
+    ReadingProgress? progress,
+    int? percent,
+    AppLocalizations l10n,
+  ) {
+    if (progress == null) return l10n.chapterUnread;
+    if (progress.isFinished) return l10n.badgeFinished;
+    if (percent != null) return l10n.badgePercent(percent);
+    return l10n.badgePage(progress.imageIndex + 1);
   }
 
   @override
@@ -422,20 +411,33 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                       return Card(
                         key: _chapterKeys[index],
                         margin: const EdgeInsets.only(bottom: 8),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
                           children: [
+                            if (percent != null)
+                              Positioned.fill(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: FractionallySizedBox(
+                                    widthFactor: percent / 100,
+                                    child: Container(
+                                      color: theme.colorScheme.primary
+                                          .withValues(alpha: 0.12),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ListTile(
-                              leading: CircleAvatar(child: Text('${index + 1}')),
+                              leading: CircleAvatar(
+                                child: Text('${index + 1}'),
+                              ),
                               title: Text(title),
-                              trailing: percent != null
-                                  ? Text(
-                                      l10n.badgePercent(percent),
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        color: theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    )
-                                  : null,
+                              trailing: Text(
+                                _chapterStatusText(progress, percent, l10n),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                               onTap: () => context.push(
                                 '/reader/$photoId',
                                 extra: ReaderInitialData(
@@ -444,7 +446,6 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                                 ),
                               ),
                             ),
-                            _buildProgressBar(theme, percent),
                           ],
                         ),
                       );

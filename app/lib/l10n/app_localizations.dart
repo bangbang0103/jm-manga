@@ -350,6 +350,66 @@ abstract class AppLocalizations {
   /// **'Browse manga'**
   String get recentBrowseManga;
 
+  /// No description provided for @recentSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search reading history'**
+  String get recentSearchHint;
+
+  /// No description provided for @recentEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get recentEdit;
+
+  /// No description provided for @recentDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get recentDone;
+
+  /// No description provided for @recentSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select All'**
+  String get recentSelectAll;
+
+  /// No description provided for @recentDeselectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect All'**
+  String get recentDeselectAll;
+
+  /// Bottom bar delete button with selected count
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ({count})'**
+  String recentDelete(int count);
+
+  /// Toast after deleting recent reading records
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted reading history for {count} manga'**
+  String recentDeleted(int count);
+
+  /// No description provided for @recentUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get recentUndo;
+
+  /// AppBar title in recent read edit mode
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String recentSelectedCount(int count);
+
+  /// No description provided for @recentSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching reading history'**
+  String get recentSearchEmpty;
+
   /// No description provided for @rankingsTitle.
   ///
   /// In en, this message translates to:
@@ -829,6 +889,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{chapter}-100%'**
   String badgeChapterFinished(Object chapter);
+
+  /// No description provided for @chapterUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get chapterUnread;
 
   /// No description provided for @logsTitle.
   ///

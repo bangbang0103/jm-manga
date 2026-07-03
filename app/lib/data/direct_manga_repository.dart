@@ -270,6 +270,11 @@ class DirectMangaRepository implements MangaRepository {
   }
 
   @override
+  Future<List<ReadingProgress>> searchRecentProgress(String query) {
+    return localStore.searchRecentProgress(ownerKey, query);
+  }
+
+  @override
   Future<List<ReadingProgress>> getAlbumProgress(String albumId) {
     return localStore.getAlbumProgress(ownerKey, albumId);
   }
@@ -277,6 +282,11 @@ class DirectMangaRepository implements MangaRepository {
   @override
   Future<void> syncProgress(ReadingProgress progress) {
     return localStore.saveProgress(ownerKey, progress);
+  }
+
+  @override
+  Future<void> deleteRecentProgress(List<String> albumIds) async {
+    await localStore.deleteRecentProgress(ownerKey, albumIds);
   }
 
   @override

@@ -137,6 +137,42 @@ class AppLocalizationsZh extends AppLocalizations {
   String get recentBrowseManga => '去逛逛';
 
   @override
+  String get recentSearchHint => '搜索阅读记录';
+
+  @override
+  String get recentEdit => '编辑';
+
+  @override
+  String get recentDone => '完成';
+
+  @override
+  String get recentSelectAll => '全选';
+
+  @override
+  String get recentDeselectAll => '取消全选';
+
+  @override
+  String recentDelete(int count) {
+    return '删除 ($count)';
+  }
+
+  @override
+  String recentDeleted(int count) {
+    return '已删除 $count 本漫画的阅读记录';
+  }
+
+  @override
+  String get recentUndo => '撤销';
+
+  @override
+  String recentSelectedCount(int count) {
+    return '已选择 $count 项';
+  }
+
+  @override
+  String get recentSearchEmpty => '未找到匹配的阅读记录';
+
+  @override
   String get rankingsTitle => '排行榜';
 
   @override
@@ -395,6 +431,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String badgeChapterFinished(Object chapter) {
     return '$chapter-100%';
   }
+
+  @override
+  String get chapterUnread => '未读';
 
   @override
   String get logsTitle => '日志';

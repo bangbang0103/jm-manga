@@ -50,6 +50,16 @@ void main() {
       expect(request.includes, ['无修正']);
       expect(request.allowedGlobal, ['全彩']);
     });
+
+    test('global exclude allowance is case-sensitive', () {
+      final request = TagQueryParser.parse(
+        'MANA +ntr',
+        globalExcludes: const ['NTR'],
+      );
+      expect(request.keywords, 'MANA');
+      expect(request.includes, ['ntr']);
+      expect(request.allowedGlobal, isEmpty);
+    });
   });
 
   group('TagQueryParser.buildEffectiveQuery', () {

@@ -34,6 +34,21 @@ class LocalMangaStore {
     return _records.albumProgress(ownerKey, albumId);
   }
 
+  Future<int> deleteRecentProgress(
+    String ownerKey,
+    List<String> albumIds,
+  ) {
+    return _records.deleteAlbumProgressList(ownerKey, albumIds);
+  }
+
+  Future<List<ReadingProgress>> searchRecentProgress(
+    String ownerKey,
+    String query, {
+    int limit = 20,
+  }) {
+    return _records.searchRecentProgress(ownerKey, query, limit: limit);
+  }
+
   /// 添加/更新本地收藏。
   ///
   /// - 新记录或从未同步的记录 → `pendingAdd`（可透传 [syncStatus] 覆盖）。
