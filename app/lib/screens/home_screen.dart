@@ -41,7 +41,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   void _refreshHome(WidgetRef ref) {
-    ref.invalidate(readingProgressProvider);
+    ref.invalidate(homeRecentProgressProvider);
     for (final slug in _categorySections) {
       ref.invalidate(categoryProvider(CategoryKey(slug, 'mr')));
     }
@@ -197,7 +197,7 @@ class _RecentReadSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final recentAsync = ref.watch(readingProgressProvider);
+    final recentAsync = ref.watch(homeRecentProgressProvider);
     final favoriteIdsAsync = ref.watch(favoriteAlbumIdsProvider);
 
     return recentAsync.when(

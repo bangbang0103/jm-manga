@@ -383,6 +383,14 @@ final readingProgressProvider = StateNotifierProvider<
   return RecentReadNotifier(repo);
 });
 
+/// Home 最近阅读使用独立的 FutureProvider，避免被 Library 的搜索状态污染。
+final homeRecentProgressProvider = FutureProvider<List<ReadingProgress>>((
+  ref,
+) async {
+  final repo = ref.watch(apiRepositoryProvider);
+  return repo.getRecentProgress();
+});
+
 class RecentReadNotifier
     extends StateNotifier<AsyncValue<List<ReadingProgress>>> {
   final MangaRepository _repo;

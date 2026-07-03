@@ -41,6 +41,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   Map<String, List<ReadingProgress>> _lastDeleted = {};
   bool _showUndo = false;
 
+  int _lastTabIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -49,10 +51,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       vsync: this,
       initialIndex: widget.initialTab,
     );
+    _lastTabIndex = _tabController.index;
+    _tabController.addListener(_handleTabChange);
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     _recentSearchController.dispose();
     super.dispose();
@@ -65,6 +70,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         widget.initialTab != _tabController.index) {
       _tabController.index = widget.initialTab;
     }
+  }
+
+  void _handleTabChange() {
+    if (_tabController.index == _lastTabIndex) return;
+    _lastTabIndex = _tabController.index;
+    _onTabTapped(_lastTabIndex);
   }
 
   void _onTabTapped(int index) {
@@ -162,15 +173,19 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     final repo = ref.read(apiRepositoryProvider);
     final notifier = ref.read(readingProgressProvider.notifier);
 
-    // Backup progress for undo.
-    final backup = <String, List<ReadingProgress>>{};
-    for (final albumId in _selectedAlbumIds) {
-      backup[albumId] = await repo.getAlbumProgress(albumId);
-    }
-
+    // Snapshot selection and enter busy state before any async work.
+    final selectedSnapshot = _selectedAlbumIds.toList();
     setState(() => _isDeleting = true);
+
     try {
-      await notifier.delete(_selectedAlbumIds.toList());
+      // Backup progress for undo.
+      final backup = <String, List<ReadingProgress>>{};
+      for (final albumId in selectedSnapshot) {
+        backup[albumId] = await repo.getAlbumProgress(albumId);
+      }
+
+      await notifier.delete(selectedSnapshot);
+      ref.invalidate(homeRecentProgressProvider);
       if (mounted) {
         setState(() {
           _lastDeleted = backup;
@@ -202,23 +217,38 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }
 
   Future<void> _undoDelete() async {
-    if (!_showUndo || _lastDeleted.isEmpty) return;
+    if (!_showUndo || _lastDeleted.isEmpty || _isDeleting) return;
 
     final repo = ref.read(apiRepositoryProvider);
     final notifier = ref.read(readingProgressProvider.notifier);
 
-    for (final progresses in _lastDeleted.values) {
-      for (final progress in progresses) {
-        await repo.syncProgress(progress);
+    setState(() => _isDeleting = true);
+    try {
+      for (final progresses in _lastDeleted.values) {
+        for (final progress in progresses) {
+          await repo.syncProgress(progress);
+        }
       }
-    }
-    await notifier.refresh();
+      await notifier.refresh();
+      ref.invalidate(homeRecentProgressProvider);
 
-    if (mounted) {
-      setState(() {
-        _lastDeleted = {};
-        _showUndo = false;
-      });
+      if (mounted) {
+        setState(() {
+          _lastDeleted = {};
+          _showUndo = false;
+          _isDeleting = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        final l10n = AppLocalizations.of(context)!;
+        TopToast.show(
+          context,
+          mapErrorToUserMessage(e, l10n),
+          type: TopToastType.error,
+        );
+      }
     }
   }
 
@@ -255,7 +285,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             : Text(l10n.libraryTitle),
         bottom: TabBar(
           controller: _tabController,
-          onTap: _onTabTapped,
           tabs: [
             Tab(text: l10n.tabFavorite),
             Tab(text: l10n.tabRecentRead),
@@ -386,21 +415,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
     if (_showUndo) {
       return TextButton(
-        onPressed: _undoDelete,
+        onPressed: _isDeleting ? null : _undoDelete,
         child: Text(l10n.recentUndo),
       );
     }
 
     return TextButton(
-      onPressed: _isEditingRecent || hasItems
-          ? () {
+      onPressed: _isDeleting || (!_isEditingRecent && !hasItems)
+          ? null
+          : () {
               if (_isEditingRecent) {
                 setState(_resetRecentEditState);
               } else {
                 _enterRecentEditMode();
               }
-            }
-          : null,
+            },
       child: Text(_isEditingRecent ? l10n.recentDone : l10n.recentEdit),
     );
   }
