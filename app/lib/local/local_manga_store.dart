@@ -113,7 +113,8 @@ class LocalMangaStore {
 
   Future<bool> isFavorite(String ownerKey, String albumId) async {
     final existing = await _findFavorite(ownerKey, albumId);
-    return existing?.syncStatus != FavoriteSyncStatus.pendingRemove;
+    return existing != null &&
+        existing.syncStatus != FavoriteSyncStatus.pendingRemove;
   }
 
   Future<List<AlbumItem>> getFavorites(String ownerKey, {int page = 1}) async {

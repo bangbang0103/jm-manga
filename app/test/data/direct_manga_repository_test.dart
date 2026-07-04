@@ -18,6 +18,29 @@ LocalMangaStore _createLocalStore() {
 
 void main() {
   group('DirectMangaRepository', () {
+    test('toggleFavorite adds missing local favorite before removing it', () async {
+      final localStore = _createLocalStore();
+      final repo = DirectMangaRepository(
+        client: FakeJmClient(),
+        ownerKey: 'device:test',
+        localStore: localStore,
+        sessionStore: MemorySessionStore(),
+      );
+      final item = AlbumItem(albumId: '42', title: 'Forty Two', tags: const []);
+
+      final added = await repo.toggleFavorite(item.albumId, item: item);
+      final afterAdd = await repo.getFavorites();
+
+      expect(added['favorited'], isTrue);
+      expect(afterAdd.map((item) => item.albumId), ['42']);
+
+      final removed = await repo.toggleFavorite(item.albumId, item: item);
+      final afterRemove = await repo.getFavorites();
+
+      expect(removed['favorited'], isFalse);
+      expect(afterRemove, isEmpty);
+    });
+
     test('syncFavorites fetches JM pages into local favorites', () async {
       final repo = DirectMangaRepository(
         client: FakeJmClient(),

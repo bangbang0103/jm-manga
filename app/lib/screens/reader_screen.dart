@@ -90,7 +90,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
 
   void _openChapter(String? photoId, ReaderInitialData initialData) {
     if (photoId == null || photoId.isEmpty) return;
-    context.go('/reader/$photoId', extra: initialData);
+    context.replace('/reader/$photoId', extra: initialData);
   }
 
   ReadingProgress? _findProgress(
