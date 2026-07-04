@@ -49,7 +49,7 @@
   "recentBrowseManga": "Browse manga",
   "recentSearchHint": "Search reading history",
   "recentEdit": "Edit",
-  "recentDone": "Done",
+  "recentCancel": "Cancel",
   "recentSelectAll": "Select All",
   "recentDeselectAll": "Deselect All",
   "recentDelete": "Delete ({count})",
@@ -147,7 +147,7 @@
   "settingsTitle": "Settings",
   "sectionAccounts": "JM Comic Accounts",
   "sectionAppearance": "Appearance",
-  "sectionReader": "Reader & Filter",
+  "sectionReader": "Reader",
   "accountAnonymous": "Anonymous / No account",
   "accountAddTooltip": "Add account",
   "accountRefreshTooltip": "Refresh login",
@@ -214,6 +214,7 @@
     }
   },
   "chapterUnread": "Unread",
+  "chapterReading": "Reading",
   "logsTitle": "Logs",
   "logsExport": "Export logs",
   "logsClear": "Clear logs",
@@ -334,32 +335,5 @@
   "faqCacheLogsQuestion": "How do I clear cache or export logs?",
   "faqCacheLogsAnswer": "• Clear cache: Settings > Cache, where you can clear cover cache and manga image cache separately.\n\n• Export logs: Settings > Advanced > View Logs, then tap the share button in the top right to export the full log file.",
   "faqLogHint": "Still stuck? Go to Settings > Advanced > View Logs for request details.",
-  "excludedTagsTitle": "Excluded tags",
-  "excludedTagsCount": "{count} excluded",
-  "@excludedTagsCount": {
-    "placeholders": {
-      "count": {}
-    }
-  },
-  "excludedTagsEmpty": "No excluded tags yet",
-  "excludedTagsHint": "Enter a tag to exclude",
-  "excludedTagsAdded": "Excluded “{tag}”",
-  "@excludedTagsAdded": {
-    "placeholders": {
-      "tag": {}
-    }
-  },
-  "excludedTagsRemoved": "Removed “{tag}”",
-  "@excludedTagsRemoved": {
-    "placeholders": {
-      "tag": {}
-    }
-  },
-  "searchFilterTitle": "Filter",
-  "searchFilterCurrentExcludes": "Current excludes",
-  "searchFilterGlobalExcludes": "Global excluded tags",
-  "searchFilterAllowThisTime": "Allow this time",
-  "searchFilterManageGlobal": "Manage global excluded tags",
-  "searchFilterNoCurrentExcludes": "No temporary excludes",
   "sectionContentFilter": "Content filter"
 }

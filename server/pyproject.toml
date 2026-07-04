@@ -1,6 +1,6 @@
 [project]
 name = "jm-manga-server"
-version = "0.2.2"
+version = "0.2.3"
 description = "Self-hosted acceleration server for JM Manga, powered by jmcomic and FastAPI."
 requires-python = ">=3.11"
 dependencies = [

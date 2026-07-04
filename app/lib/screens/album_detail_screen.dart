@@ -175,7 +175,7 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
     if (progress == null) return l10n.chapterUnread;
     if (progress.isFinished) return l10n.badgeFinished;
     if (percent != null) return l10n.badgePercent(percent);
-    return l10n.badgePage(progress.imageIndex + 1);
+    return l10n.chapterReading;
   }
 
   @override
@@ -408,6 +408,12 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                       final progress = _findProgress(progressList, photoId);
                       final percent = _progressPercent(progress);
 
+                      final fillAlpha =
+                          theme.brightness == Brightness.dark ? 0.18 : 0.12;
+                      final statusColor = percent != null
+                          ? theme.colorScheme.onSurface
+                          : theme.colorScheme.onSurfaceVariant;
+
                       return Card(
                         key: _chapterKeys[index],
                         margin: const EdgeInsets.only(bottom: 8),
@@ -422,20 +428,24 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                                     widthFactor: percent / 100,
                                     child: Container(
                                       color: theme.colorScheme.primary
-                                          .withValues(alpha: 0.12),
+                                          .withValues(alpha: fillAlpha),
                                     ),
                                   ),
                                 ),
                               ),
                             ListTile(
                               leading: CircleAvatar(
+                                backgroundColor:
+                                    theme.colorScheme.surfaceContainerHigh,
+                                foregroundColor:
+                                    theme.colorScheme.onSurfaceVariant,
                                 child: Text('${index + 1}'),
                               ),
                               title: Text(title),
                               trailing: Text(
                                 _chapterStatusText(progress, percent, l10n),
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
+                                  color: statusColor,
                                 ),
                               ),
                               onTap: () => context.push(

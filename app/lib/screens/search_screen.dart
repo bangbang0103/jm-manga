@@ -13,10 +13,8 @@ import '../utils/tag_query_parser.dart';
 import '../utils/top_toast.dart';
 import '../widgets/animations/staggered_grid.dart';
 import '../widgets/error_placeholder.dart';
-import '../widgets/filter_chip_bar.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/manga_cover_card.dart';
-import '../widgets/search_filter_sheet.dart';
 import '../widgets/tag_chip.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -30,116 +28,40 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _controller = TextEditingController();
-
-  // 来自搜索框的普通关键词与 +/- 语法
-  String _keywords = '';
-  List<String> _inlineIncludes = const <String>[];
-  List<String> _inlineExcludes = const <String>[];
-
-  // 来自过滤面板的临时状态
-  List<String> _panelExcludes = const <String>[];
-  List<String> _allowedGlobal = const <String>[];
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
     final initial = widget.initialQuery?.trim() ?? '';
     if (initial.isNotEmpty) {
-      final parsed = _parseSearchInput(initial);
-      _keywords = parsed.keywords;
-      _inlineIncludes = parsed.includes;
-      _inlineExcludes = parsed.excludes;
-      _allowedGlobal = parsed.allowedGlobal;
-      _controller.text = _keywords;
+      _query = initial;
+      _controller.text = initial;
     }
-  }
-
-  SearchRequest _parseSearchInput(String input) {
-    final config = ref.read(configProvider);
-    return TagQueryParser.parse(input, globalExcludes: config.excludedTags);
-  }
-
-  static String _tagKey(String tag) => tag.trim().toLowerCase();
-
-  static List<String> _withoutTags(
-    List<String> tags,
-    Iterable<String> removed,
-  ) {
-    final removedKeys = removed.map(_tagKey).toSet();
-    return tags.where((tag) => !removedKeys.contains(_tagKey(tag))).toList();
-  }
-
-  static List<String> _mergeTags(List<String> tags, Iterable<String> added) {
-    final merged = [...tags];
-    for (final tag in added) {
-      if (tag.trim().isEmpty) continue;
-      if (!merged.any((existing) => _tagKey(existing) == _tagKey(tag))) {
-        merged.add(tag);
-      }
-    }
-    return merged;
-  }
-
-  SearchRequest _buildRequest() {
-    final config = ref.read(configProvider);
-    return SearchRequest(
-      keywords: _keywords,
-      includes: _inlineIncludes,
-      excludes: {..._inlineExcludes, ..._panelExcludes}.toList(),
-      globalExcludes: config.excludedTags,
-      allowedGlobal: _allowedGlobal,
-    );
   }
 
   void _search({bool saveToHistory = false}) {
-    final parsed = _parseSearchInput(_controller.text);
+    final text = _controller.text.trim();
     setState(() {
-      _keywords = parsed.keywords;
-      _inlineIncludes = _withoutTags(_inlineIncludes, parsed.excludes);
-      _inlineIncludes = _mergeTags(_inlineIncludes, parsed.includes);
-      _inlineExcludes = _withoutTags(_inlineExcludes, [
-        ...parsed.includes,
-        ...parsed.allowedGlobal,
-      ]);
-      _panelExcludes = _withoutTags(_panelExcludes, [
-        ...parsed.includes,
-        ...parsed.allowedGlobal,
-      ]);
-      _inlineExcludes = _mergeTags(_inlineExcludes, parsed.excludes);
-      _allowedGlobal = _withoutTags(_allowedGlobal, parsed.excludes);
-      _allowedGlobal = _mergeTags(_allowedGlobal, parsed.allowedGlobal);
-      _controller.text = _keywords;
+      _query = text;
     });
 
-    final request = _buildRequest();
-    if (saveToHistory && request.historyQuery.isNotEmpty) {
-      ref.read(searchHistoryProvider.notifier).add(request.historyQuery);
+    if (saveToHistory && text.isNotEmpty) {
+      ref.read(searchHistoryProvider.notifier).add(text);
     }
   }
 
   void _onSearchChanged(String value) {
-    // 搜索框清空时回到历史页，同时清空所有临时过滤条件。
     if (value.trim().isEmpty) {
       setState(() {
-        _keywords = '';
-        _inlineIncludes = const <String>[];
-        _inlineExcludes = const <String>[];
-        _panelExcludes = const <String>[];
-        _allowedGlobal = const <String>[];
+        _query = '';
       });
     }
   }
 
   void _searchFromHistory(String query) {
-    final parsed = _parseSearchInput(query);
-    setState(() {
-      _keywords = parsed.keywords;
-      _inlineIncludes = parsed.includes;
-      _inlineExcludes = parsed.excludes;
-      _panelExcludes = const <String>[];
-      _allowedGlobal = parsed.allowedGlobal;
-      _controller.text = _keywords;
-    });
+    _controller.text = query;
+    _search(saveToHistory: false);
   }
 
   Future<void> _deleteHistory(String query) async {
@@ -189,58 +111,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
-  void _showFilterSheet() {
-    final config = ref.read(configProvider);
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => SearchFilterSheet(
-        currentExcludes: {..._inlineExcludes, ..._panelExcludes}.toList(),
-        globalExcludes: config.excludedTags,
-        allowedGlobal: _allowedGlobal,
-        onExcludeAdded: (tag) {
-          setState(() {
-            _panelExcludes = {..._panelExcludes, tag}.toList();
-          });
-        },
-        onExcludeRemoved: (tag) {
-          setState(() {
-            _inlineExcludes = _inlineExcludes.where((t) => t != tag).toList();
-            _panelExcludes = _panelExcludes.where((t) => t != tag).toList();
-          });
-        },
-        onGlobalAllowedChanged: (tag, allowed) {
-          setState(() {
-            if (allowed) {
-              _allowedGlobal = {..._allowedGlobal, tag}.toList();
-            } else {
-              _allowedGlobal = _allowedGlobal.where((t) => t != tag).toList();
-            }
-          });
-        },
-      ),
-    );
-  }
-
-  void _removeKeyword(String keyword) {
-    _controller.clear();
-    _search(saveToHistory: false);
-  }
-
-  void _removeInclude(String tag) {
-    setState(() {
-      _inlineIncludes = _inlineIncludes.where((t) => t != tag).toList();
-      _allowedGlobal = _allowedGlobal.where((t) => t != tag).toList();
-    });
-  }
-
-  void _removeExclude(String tag) {
-    setState(() {
-      _inlineExcludes = _inlineExcludes.where((t) => t != tag).toList();
-      _panelExcludes = _panelExcludes.where((t) => t != tag).toList();
-    });
-  }
-
   @override
   void dispose() {
     _controller.dispose();
@@ -251,32 +121,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final config = ref.watch(configProvider);
 
-    final request = SearchRequest(
-      keywords: _keywords,
-      includes: _inlineIncludes,
-      excludes: {..._inlineExcludes, ..._panelExcludes}.toList(),
-      globalExcludes: config.excludedTags,
-      allowedGlobal: _allowedGlobal,
-    );
-    final hasUserInput =
-        _keywords.isNotEmpty ||
-        _inlineIncludes.isNotEmpty ||
-        _inlineExcludes.isNotEmpty ||
-        _panelExcludes.isNotEmpty ||
-        _allowedGlobal.isNotEmpty;
-
-    final results = hasUserInput
+    final request = SearchRequest(keywords: _query);
+    final results = _query.isNotEmpty
         ? ref.watch(searchProvider(request))
         : const AsyncValue<List<dynamic>>.data([]);
     final history = ref.watch(searchHistoryProvider);
-
-    final includeTags = {
-      ...request.includes,
-      ...request.allowedGlobal,
-    }.toList();
-    final excludeTags = request.excludes;
 
     return Scaffold(
       appBar: AppBar(
@@ -292,11 +142,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           onSubmitted: (_) => _search(saveToHistory: true),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.tune),
-            tooltip: l10n.searchFilterTitle,
-            onPressed: _showFilterSheet,
-          ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilledButton(
@@ -314,62 +159,47 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          if (hasUserInput)
-            FilterChipBar(
-              keywords: request.keywords,
-              includes: includeTags,
-              excludes: excludeTags,
-              onRemoveKeyword: _removeKeyword,
-              onRemoveInclude: _removeInclude,
-              onRemoveExclude: _removeExclude,
-            ),
-          Expanded(
-            child: !hasUserInput
-                ? _SearchHistoryView(
-                    history: history,
-                    onTap: _searchFromHistory,
-                    onDelete: _deleteHistory,
-                    onClearAll: _confirmClearHistory,
-                  )
-                : results.when(
-                    data: (items) {
-                      final notifier = ref.read(
-                        searchProvider(request).notifier,
-                      );
-                      return RefreshIndicator(
-                        onRefresh: () async => notifier.search(),
-                        child: NotificationListener<ScrollNotification>(
-                          onNotification: (notification) {
-                            if (notification is ScrollEndNotification &&
-                                notification.metrics.extentAfter < 300) {
-                              notifier.loadMore();
-                            }
-                            return false;
-                          },
-                          child: _SearchGrid(
-                            items: items.cast<dynamic>(),
-                            hasMore: notifier.hasMore,
-                          ),
-                        ),
-                      );
+      body: _query.isEmpty
+          ? _SearchHistoryView(
+              history: history,
+              onTap: _searchFromHistory,
+              onDelete: _deleteHistory,
+              onClearAll: _confirmClearHistory,
+            )
+          : results.when(
+              data: (items) {
+                final notifier = ref.read(
+                  searchProvider(request).notifier,
+                );
+                return RefreshIndicator(
+                  onRefresh: () async => notifier.search(),
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      if (notification is ScrollEndNotification &&
+                          notification.metrics.extentAfter < 300) {
+                        notifier.loadMore();
+                      }
+                      return false;
                     },
-                    loading: () => const AppLoadingIndicator(),
-                    error: (e, _) {
-                      final notifier = ref.read(
-                        searchProvider(request).notifier,
-                      );
-                      return ErrorPlaceholder(
-                        message: mapErrorToUserMessage(e, l10n),
-                        onRetry: notifier.search,
-                        retryLabel: l10n.actionRetry,
-                      );
-                    },
+                    child: _SearchGrid(
+                      items: items.cast<dynamic>(),
+                      hasMore: notifier.hasMore,
+                    ),
                   ),
-          ),
-        ],
-      ),
+                );
+              },
+              loading: () => const AppLoadingIndicator(),
+              error: (e, _) {
+                final notifier = ref.read(
+                  searchProvider(request).notifier,
+                );
+                return ErrorPlaceholder(
+                  message: mapErrorToUserMessage(e, l10n),
+                  onRetry: notifier.search,
+                  retryLabel: l10n.actionRetry,
+                );
+              },
+            ),
     );
   }
 }

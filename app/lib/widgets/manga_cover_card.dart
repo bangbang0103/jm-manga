@@ -9,6 +9,7 @@ class MangaCoverCard extends StatefulWidget {
   final ImageProvider imageProvider;
   final String? badgeText;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final VoidCallback? onFavorite;
   final bool isFavorite;
 
@@ -18,6 +19,7 @@ class MangaCoverCard extends StatefulWidget {
     required this.imageProvider,
     this.badgeText,
     this.onTap,
+    this.onLongPress,
     this.onFavorite,
     this.isFavorite = false,
   });
@@ -194,8 +196,12 @@ class _MangaCoverCardState extends State<MangaCoverCard> {
       ),
     );
 
-    if (widget.onTap != null) {
-      card = Pressable(onTap: widget.onTap, child: card);
+    if (widget.onTap != null || widget.onLongPress != null) {
+      card = Pressable(
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        child: card,
+      );
     }
 
     return card;

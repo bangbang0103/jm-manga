@@ -14,28 +14,21 @@ class _SearchRepo extends FakeApiRepository {
   Future<List<AlbumItem>> search(String query, {int page = 1}) async {
     queries.add('$query:$page');
     return [
-      AlbumItem(albumId: 'blocked', title: 'Block Safe', tags: const ['Safe']),
-      AlbumItem(albumId: 'keep', title: 'Keep', tags: const []),
-      AlbumItem(albumId: 'allowed', title: 'Allowed', tags: const []),
+      AlbumItem(albumId: '1', title: 'First', tags: const []),
+      AlbumItem(albumId: '2', title: 'Second', tags: const []),
     ];
   }
 }
 
 void main() {
-  test('searchProvider sends full filter query to the server', () async {
+  test('searchProvider sends raw query to the server', () async {
     final repo = _SearchRepo();
     final container = ProviderContainer(
       overrides: [apiRepositoryProvider.overrideWithValue(repo)],
     );
     addTearDown(container.dispose);
 
-    const request = SearchRequest(
-      keywords: 'MANA',
-      includes: ['Safe'],
-      excludes: ['Block'],
-      globalExcludes: ['Hidden'],
-      allowedGlobal: ['Hidden'],
-    );
+    const request = SearchRequest(keywords: 'overwatch -3D');
     container.listen(searchProvider(request), (_, _) {});
 
     await container.pump();
@@ -43,27 +36,24 @@ void main() {
     await container.pump();
 
     final value = container.read(searchProvider(request)).valueOrNull;
-    expect(repo.queries, ['MANA +Safe +Hidden -Block:1']);
-    expect(value?.map((item) => item.albumId), ['blocked', 'keep', 'allowed']);
+    expect(repo.queries, ['overwatch -3D:1']);
+    expect(value?.map((item) => item.albumId), ['1', '2']);
   });
 
-  test(
-    'searchProvider does not fetch when request has no recall terms',
-    () async {
-      final repo = _SearchRepo();
-      final container = ProviderContainer(
-        overrides: [apiRepositoryProvider.overrideWithValue(repo)],
-      );
-      addTearDown(container.dispose);
+  test('searchProvider does not fetch when query is empty', () async {
+    final repo = _SearchRepo();
+    final container = ProviderContainer(
+      overrides: [apiRepositoryProvider.overrideWithValue(repo)],
+    );
+    addTearDown(container.dispose);
 
-      const request = SearchRequest(excludes: ['Block']);
-      container.listen(searchProvider(request), (_, _) {});
+    const request = SearchRequest(keywords: '');
+    container.listen(searchProvider(request), (_, _) {});
 
-      await container.pump();
+    await container.pump();
 
-      expect(repo.queries, isEmpty);
-      expect(container.read(searchProvider(request)).valueOrNull, isEmpty);
-      expect(container.read(searchProvider(request).notifier).hasMore, false);
-    },
-  );
+    expect(repo.queries, isEmpty);
+    expect(container.read(searchProvider(request)).valueOrNull, isEmpty);
+    expect(container.read(searchProvider(request).notifier).hasMore, false);
+  });
 }

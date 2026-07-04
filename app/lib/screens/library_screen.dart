@@ -312,9 +312,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                       _isSyncing ? l10n.favoriteSyncing : l10n.favoriteSyncNow,
                     ),
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onChanged: (value) => favoritesNotifier.search(value),
@@ -333,9 +330,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                       decoration: InputDecoration(
                         hintText: l10n.recentSearchHint,
                         prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
                         contentPadding:
                             const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -412,25 +406,34 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   Widget _buildRecentEditOrUndoButton(bool hasItems) {
     final l10n = AppLocalizations.of(context)!;
+    final buttonStyle = TextButton.styleFrom(
+      minimumSize: const Size(0, 44),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+    );
 
-    if (_showUndo) {
-      return TextButton(
-        onPressed: _isDeleting ? null : _undoDelete,
-        child: Text(l10n.recentUndo),
-      );
-    }
-
-    return TextButton(
-      onPressed: _isDeleting || (!_isEditingRecent && !hasItems)
-          ? null
-          : () {
-              if (_isEditingRecent) {
-                setState(_resetRecentEditState);
-              } else {
-                _enterRecentEditMode();
-              }
-            },
-      child: Text(_isEditingRecent ? l10n.recentDone : l10n.recentEdit),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_showUndo)
+          TextButton(
+            style: buttonStyle,
+            onPressed: _isDeleting ? null : _undoDelete,
+            child: Text(l10n.recentUndo),
+          ),
+        TextButton(
+          style: buttonStyle,
+          onPressed: _isDeleting || (!_isEditingRecent && !hasItems)
+              ? null
+              : () {
+                  if (_isEditingRecent) {
+                    setState(_resetRecentEditState);
+                  } else {
+                    _enterRecentEditMode();
+                  }
+                },
+          child: Text(_isEditingRecent ? l10n.recentCancel : l10n.recentEdit),
+        ),
+      ],
     );
   }
 
@@ -439,7 +442,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     final allSelected = visibleAlbumIds.isNotEmpty &&
         visibleAlbumIds.every(_selectedAlbumIds.contains);
 
+    final theme = Theme.of(context);
+
     return BottomAppBar(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -447,6 +454,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             children: [
               const Spacer(),
               TextButton(
+                style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
                 onPressed: _isDeleting
                     ? null
                     : allSelected
@@ -458,16 +466,17 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               ),
               const SizedBox(width: 8),
               FilledButton(
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
                 onPressed: _isDeleting || _selectedAlbumIds.isEmpty
                     ? null
                     : _deleteSelected,
                 child: _isDeleting
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: theme.colorScheme.onPrimary,
                         ),
                       )
                     : Text(l10n.recentDelete(_selectedAlbumIds.length)),
@@ -497,6 +506,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     ValueChanged<T>? onLongPress,
   }) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final favoriteIdsAsync = ref.watch(favoriteAlbumIdsProvider);
     final repo = ref.read(apiRepositoryProvider);
 
@@ -517,7 +527,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                         Text(emptyMessage),
                         if (emptyAction != null) ...[
                           const SizedBox(height: 12),
-                          ElevatedButton(
+                          FilledButton(
                             onPressed: emptyAction.onPressed,
                             child: Text(emptyAction.label),
                           ),
@@ -563,6 +573,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                   onTap: isEditing && albumId != null
                       ? () => onToggleSelection?.call(albumId)
                       : () => context.push(routeFor(item)),
+                  onLongPress: onLongPress != null && !isEditing
+                      ? () => onLongPress(item)
+                      : null,
                   onFavorite: isEditing || albumId == null
                       ? null
                       : () => toggleFavoriteAction(
@@ -579,27 +592,30 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                       card,
                       Positioned(
                         top: 8,
-                        left: 8,
-                        child: Transform.scale(
-                          scale: 1.25,
-                          child: Checkbox(
-                            value: isSelected,
-                            onChanged: (_) => onToggleSelection?.call(albumId),
-                            shape: const CircleBorder(),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: _isDeleting
+                              ? null
+                              : () => onToggleSelection?.call(albumId),
+                          behavior: HitTestBehavior.opaque,
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Center(
+                              child: Icon(
+                                isSelected
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_unchecked,
+                                size: 22,
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.outline,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ],
-                  );
-                }
-
-                if (onLongPress != null && !isEditing) {
-                  card = GestureDetector(
-                    onLongPress: () => onLongPress(item),
-                    behavior: HitTestBehavior.translucent,
-                    child: card,
                   );
                 }
 

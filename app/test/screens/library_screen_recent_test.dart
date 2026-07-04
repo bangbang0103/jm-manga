@@ -69,7 +69,7 @@ void main() {
 
       expect(find.text('0 selected'), findsOneWidget);
 
-      await tester.tap(find.byType(Checkbox));
+      await tester.tap(find.byIcon(Icons.radio_button_unchecked));
       await tester.pumpAndSettle();
 
       expect(find.text('Delete (1)'), findsOneWidget);
