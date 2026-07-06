@@ -14,8 +14,9 @@ class LocalDatabase {
 
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -63,6 +64,36 @@ class LocalDatabase {
     await db.execute('''
       CREATE INDEX idx_favorites_owner
       ON favorites(owner_key)
+    ''');
+
+    await _createChapterManifests(db);
+  }
+
+  static FutureOr<void> _onUpgrade(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) {
+      await _createChapterManifests(db);
+    }
+  }
+
+  static Future<void> _createChapterManifests(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS chapter_manifests (
+        photo_id TEXT PRIMARY KEY,
+        album_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        image_names TEXT NOT NULL,
+        page_count INTEGER NOT NULL,
+        cached_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_chapter_manifests_album
+      ON chapter_manifests(album_id)
     ''');
   }
 }

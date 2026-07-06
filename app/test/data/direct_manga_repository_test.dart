@@ -11,35 +11,40 @@ import 'package:test/test.dart';
 import '../local/test_database_helper.dart';
 
 LocalMangaStore _createLocalStore() {
-  return LocalMangaStore(
-    records: LocalMangaRecords(createTestDatabase()),
-  );
+  return LocalMangaStore(records: LocalMangaRecords(createTestDatabase()));
 }
 
 void main() {
   group('DirectMangaRepository', () {
-    test('toggleFavorite adds missing local favorite before removing it', () async {
-      final localStore = _createLocalStore();
-      final repo = DirectMangaRepository(
-        client: FakeJmClient(),
-        ownerKey: 'device:test',
-        localStore: localStore,
-        sessionStore: MemorySessionStore(),
-      );
-      final item = AlbumItem(albumId: '42', title: 'Forty Two', tags: const []);
+    test(
+      'toggleFavorite adds missing local favorite before removing it',
+      () async {
+        final localStore = _createLocalStore();
+        final repo = DirectMangaRepository(
+          client: FakeJmClient(),
+          ownerKey: 'device:test',
+          localStore: localStore,
+          sessionStore: MemorySessionStore(),
+        );
+        final item = AlbumItem(
+          albumId: '42',
+          title: 'Forty Two',
+          tags: const [],
+        );
 
-      final added = await repo.toggleFavorite(item.albumId, item: item);
-      final afterAdd = await repo.getFavorites();
+        final added = await repo.toggleFavorite(item.albumId, item: item);
+        final afterAdd = await repo.getFavorites();
 
-      expect(added['favorited'], isTrue);
-      expect(afterAdd.map((item) => item.albumId), ['42']);
+        expect(added['favorited'], isTrue);
+        expect(afterAdd.map((item) => item.albumId), ['42']);
 
-      final removed = await repo.toggleFavorite(item.albumId, item: item);
-      final afterRemove = await repo.getFavorites();
+        final removed = await repo.toggleFavorite(item.albumId, item: item);
+        final afterRemove = await repo.getFavorites();
 
-      expect(removed['favorited'], isFalse);
-      expect(afterRemove, isEmpty);
-    });
+        expect(removed['favorited'], isFalse);
+        expect(afterRemove, isEmpty);
+      },
+    );
 
     test('syncFavorites fetches JM pages into local favorites', () async {
       final repo = DirectMangaRepository(
@@ -236,6 +241,29 @@ void main() {
       expect(detail.photoId, '10');
       expect(client.chapterCookies, {'AVS': 'saved-session'});
     });
+
+    test(
+      'getPhotoDetail saves chapter manifest for cache-first reads',
+      () async {
+        final localStore = _createLocalStore();
+        final repo = DirectMangaRepository(
+          client: FakeJmClient(),
+          ownerKey: 'device:test',
+          localStore: localStore,
+          sessionStore: MemorySessionStore(),
+        );
+
+        final fresh = await repo.getPhotoDetail('10');
+        final cached = await repo.getCachedPhotoDetail('10');
+
+        expect(fresh.imageUrls.single, contains('scramble_id='));
+        expect(cached, isNotNull);
+        expect(cached!.photoId, '10');
+        expect(cached.albumId, 'album-10');
+        expect(cached.pageCount, 1);
+        expect(cached.imageUrls.single, isNot(contains('scramble_id=')));
+      },
+    );
   });
 }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/direct_manga_repository.dart';
 import '../data/manga_repository.dart';
 import '../models/album.dart';
 import '../models/reading_progress.dart';
@@ -28,8 +29,7 @@ class SearchNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _loadingMore;
 
-  SearchNotifier(this.repo, this.request)
-    : super(const AsyncValue.loading()) {
+  SearchNotifier(this.repo, this.request) : super(const AsyncValue.loading()) {
     if (request.hasSearchTerms) {
       search();
     } else {
@@ -113,8 +113,7 @@ class RankingsNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _loadingMore;
 
-  RankingsNotifier(this.repo, this.key)
-    : super(const AsyncValue.loading()) {
+  RankingsNotifier(this.repo, this.key) : super(const AsyncValue.loading()) {
     load();
   }
 
@@ -199,8 +198,7 @@ class CategoryNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _loadingMore;
 
-  CategoryNotifier(this.repo, this.key)
-    : super(const AsyncValue.loading()) {
+  CategoryNotifier(this.repo, this.key) : super(const AsyncValue.loading()) {
     load();
   }
 
@@ -255,12 +253,24 @@ final albumDetailProvider = FutureProvider.family<AlbumDetail, String>((
   return repo.getAlbumDetail(albumId);
 });
 
-final photoDetailProvider = FutureProvider.family<PhotoDetail, String>((
+final photoDetailProvider = StreamProvider.family<PhotoDetail, String>((
   ref,
   photoId,
-) async {
+) async* {
   final repo = ref.watch(apiRepositoryProvider);
-  return repo.getPhotoDetail(photoId);
+  if (repo is DirectMangaRepository) {
+    final cached = await repo.getCachedPhotoDetail(photoId);
+    if (cached != null) {
+      yield cached;
+      try {
+        yield await repo.refreshPhotoDetail(photoId);
+      } catch (_) {
+        // 已经有本地 manifest 时，后台刷新失败不应该打断阅读。
+      }
+      return;
+    }
+  }
+  yield await repo.getPhotoDetail(photoId);
 });
 
 final favoritesProvider =
@@ -362,13 +372,14 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
   }
 }
 
-final readingProgressProvider = StateNotifierProvider<
-  RecentReadNotifier,
-  AsyncValue<List<ReadingProgress>>
->((ref) {
-  final repo = ref.watch(apiRepositoryProvider);
-  return RecentReadNotifier(repo);
-});
+final readingProgressProvider =
+    StateNotifierProvider<
+      RecentReadNotifier,
+      AsyncValue<List<ReadingProgress>>
+    >((ref) {
+      final repo = ref.watch(apiRepositoryProvider);
+      return RecentReadNotifier(repo);
+    });
 
 /// Home 最近阅读使用独立的 FutureProvider，避免被 Library 的搜索状态污染。
 final homeRecentProgressProvider = FutureProvider<List<ReadingProgress>>((

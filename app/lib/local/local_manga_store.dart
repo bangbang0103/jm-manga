@@ -34,10 +34,7 @@ class LocalMangaStore {
     return _records.albumProgress(ownerKey, albumId);
   }
 
-  Future<int> deleteRecentProgress(
-    String ownerKey,
-    List<String> albumIds,
-  ) {
+  Future<int> deleteRecentProgress(String ownerKey, List<String> albumIds) {
     return _records.deleteAlbumProgressList(ownerKey, albumIds);
   }
 
@@ -73,11 +70,7 @@ class LocalMangaStore {
       targetStatus = item.syncStatus ?? syncStatus;
     }
 
-    await _records.upsertFavorite(
-      ownerKey,
-      item,
-      syncStatus: targetStatus,
-    );
+    await _records.upsertFavorite(ownerKey, item, syncStatus: targetStatus);
   }
 
   /// 取消本地收藏。
@@ -160,14 +153,18 @@ class LocalMangaStore {
     List<AlbumItem> items, {
     String syncStatus = FavoriteSyncStatus.synced,
   }) async {
-    await _records.replaceFavorites(
-      ownerKey,
-      items,
-      syncStatus: syncStatus,
-    );
+    await _records.replaceFavorites(ownerKey, items, syncStatus: syncStatus);
   }
 
   Future<Map<String, int>> sizes(String ownerKey) => _records.sizes(ownerKey);
+
+  Future<void> saveChapterManifest(ChapterManifest manifest) {
+    return _records.upsertChapterManifest(manifest);
+  }
+
+  Future<ChapterManifest?> getChapterManifest(String photoId) {
+    return _records.chapterManifest(photoId);
+  }
 
   Future<AlbumItem?> _findFavorite(String ownerKey, String albumId) async {
     final all = await _records.allFavorites(ownerKey);

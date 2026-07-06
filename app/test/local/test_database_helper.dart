@@ -5,7 +5,7 @@ Future<Database> createTestDatabase() async {
   databaseFactory = databaseFactoryFfi;
   return openDatabase(
     inMemoryDatabasePath,
-    version: 1,
+    version: 2,
     onCreate: (db, version) async {
       await db.execute('''
         CREATE TABLE reading_progress (
@@ -46,6 +46,20 @@ Future<Database> createTestDatabase() async {
       await db.execute('''
         CREATE INDEX idx_favorites_owner
         ON favorites(owner_key)
+      ''');
+      await db.execute('''
+        CREATE TABLE chapter_manifests (
+          photo_id TEXT PRIMARY KEY,
+          album_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          image_names TEXT NOT NULL,
+          page_count INTEGER NOT NULL,
+          cached_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE INDEX idx_chapter_manifests_album
+        ON chapter_manifests(album_id)
       ''');
     },
   );

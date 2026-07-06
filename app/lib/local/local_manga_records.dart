@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:sqflite/sqflite.dart';
@@ -30,7 +31,8 @@ class LocalMangaRecords {
     int limit = 20,
   }) async {
     final db = await _db;
-    final rows = await db.rawQuery('''
+    final rows = await db.rawQuery(
+      '''
       SELECT r.*
       FROM reading_progress r
       INNER JOIN (
@@ -42,7 +44,9 @@ class LocalMangaRecords {
       WHERE r.owner_key = ?
       ORDER BY r.last_read_at DESC
       LIMIT ?
-    ''', [ownerKey, ownerKey, limit]);
+    ''',
+      [ownerKey, ownerKey, limit],
+    );
     return rows.map(_rowToProgress).toList();
   }
 
@@ -51,7 +55,8 @@ class LocalMangaRecords {
     String albumId,
   ) async {
     final db = await _db;
-    final rows = await db.rawQuery('''
+    final rows = await db.rawQuery(
+      '''
       SELECT r.*
       FROM reading_progress r
       INNER JOIN (
@@ -62,7 +67,9 @@ class LocalMangaRecords {
       ) latest ON r.photo_id = latest.photo_id AND r.last_read_at = latest.max_last_read_at
       WHERE r.owner_key = ? AND r.album_id = ?
       ORDER BY r.last_read_at DESC
-    ''', [ownerKey, albumId, ownerKey, albumId]);
+    ''',
+      [ownerKey, albumId, ownerKey, albumId],
+    );
     return rows.map(_rowToProgress).toList();
   }
 
@@ -110,7 +117,8 @@ class LocalMangaRecords {
     }
     final db = await _db;
     final pattern = '%$trimmed%';
-    final rows = await db.rawQuery('''
+    final rows = await db.rawQuery(
+      '''
       SELECT r.*
       FROM reading_progress r
       INNER JOIN (
@@ -122,7 +130,9 @@ class LocalMangaRecords {
       WHERE r.owner_key = ?
       ORDER BY r.last_read_at DESC
       LIMIT ?
-    ''', [ownerKey, pattern, ownerKey, limit]);
+    ''',
+      [ownerKey, pattern, ownerKey, limit],
+    );
     return rows.map(_rowToProgress).toList();
   }
 
@@ -153,11 +163,7 @@ class LocalMangaRecords {
 
   Future<void> clearFavorites(String ownerKey) async {
     final db = await _db;
-    await db.delete(
-      'favorites',
-      where: 'owner_key = ?',
-      whereArgs: [ownerKey],
-    );
+    await db.delete('favorites', where: 'owner_key = ?', whereArgs: [ownerKey]);
   }
 
   Future<bool> favoriteExists(String ownerKey, String albumId) async {
@@ -231,6 +237,27 @@ class LocalMangaRecords {
 
   // Metadata
 
+  Future<void> upsertChapterManifest(ChapterManifest manifest) async {
+    final db = await _db;
+    await db.insert(
+      'chapter_manifests',
+      _chapterManifestToRow(manifest),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<ChapterManifest?> chapterManifest(String photoId) async {
+    final db = await _db;
+    final rows = await db.query(
+      'chapter_manifests',
+      where: 'photo_id = ?',
+      whereArgs: [photoId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return _rowToChapterManifest(rows.first);
+  }
+
   Future<Map<String, int>> sizes(String ownerKey) async {
     final db = await _db;
     final path = db.path;
@@ -242,11 +269,7 @@ class LocalMangaRecords {
         // ignore
       }
     }
-    return {
-      'covers': 0,
-      'images': 0,
-      'database': fileSize,
-    };
+    return {'covers': 0, 'images': 0, 'database': fileSize};
   }
 
   // Helpers
@@ -308,5 +331,44 @@ class LocalMangaRecords {
       coverUrl: row['cover_url']?.toString(),
       syncStatus: row['sync_status']?.toString(),
     );
+  }
+
+  Map<String, dynamic> _chapterManifestToRow(ChapterManifest manifest) {
+    return {
+      'photo_id': manifest.photoId,
+      'album_id': manifest.albumId,
+      'title': manifest.title,
+      'image_names': jsonEncode(manifest.imageNames),
+      'page_count': manifest.pageCount,
+      'cached_at': DateTime.now().toUtc().toIso8601String(),
+    };
+  }
+
+  ChapterManifest _rowToChapterManifest(Map<String, dynamic> row) {
+    final rawImages = row['image_names']?.toString() ?? '';
+    final imageNames = <String>[];
+    try {
+      final decoded = jsonDecode(rawImages);
+      if (decoded is List) {
+        imageNames.addAll(decoded.map((item) => item.toString()));
+      }
+    } catch (_) {
+      // ignore corrupted manifest image list; pageCount will fall back to 0.
+    }
+
+    return ChapterManifest(
+      photoId: row['photo_id']?.toString() ?? '',
+      albumId: row['album_id']?.toString() ?? '',
+      title: row['title']?.toString() ?? '',
+      imageNames: imageNames,
+      pageCount: _asInt(row['page_count'], fallback: imageNames.length),
+    );
+  }
+
+  int _asInt(Object? value, {int fallback = 0}) {
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? fallback;
+    return fallback;
   }
 }

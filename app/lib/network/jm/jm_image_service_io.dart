@@ -81,6 +81,7 @@ class JmImageService {
   final _backoffHosts = <String, _BackoffEntry>{};
   final _Semaphore _semaphore;
   final _pending = <String, Future<Uint8List>>{};
+  final _scrambleIds = <int, Future<int>>{};
 
   static const _preferredTtl = Duration(minutes: 10);
   static const _backoffDuration = Duration(minutes: 5);
@@ -170,15 +171,16 @@ class JmImageService {
     final cached = await cache.read(url);
     if (cached != null) return cached;
 
-    final existing = _pending[url];
+    final pendingKey = cache.pendingKeyFor(url);
+    final existing = _pending[pendingKey];
     if (existing != null) return existing;
 
     final future = _fetchAndDecode(url);
-    _pending[url] = future;
+    _pending[pendingKey] = future;
     try {
       return await future;
     } finally {
-      _pending.remove(url);
+      _pending.remove(pendingKey);
     }
   }
 
@@ -190,6 +192,9 @@ class JmImageService {
       if (rawBytes.isEmpty) {
         throw StateError('JM image response is empty');
       }
+      final scrambleId = metadata.isCover || metadata.hasScrambleId
+          ? metadata.scrambleId
+          : await _scrambleIdFor(metadata.photoId);
 
       // 封面图不需要做 JM 切割，直接缓存原字节。
       final decoded = metadata.isCover
@@ -198,7 +203,7 @@ class JmImageService {
               bytes: rawBytes,
               photoId: metadata.photoId,
               filename: metadata.filenameWithoutExtension,
-              scrambleId: metadata.scrambleId,
+              scrambleId: scrambleId,
               isGif: metadata.isGif,
             ));
       await cache.write(url, decoded);
@@ -206,6 +211,14 @@ class JmImageService {
     } finally {
       _semaphore.release();
     }
+  }
+
+  Future<int> _scrambleIdFor(int photoId) {
+    final client = _client;
+    if (client == null) {
+      return Future.value(JmConstants.scramble220980);
+    }
+    return _scrambleIds[photoId] ??= client.getScrambleId(photoId.toString());
   }
 
   Future<Uint8List> _fetchImageBytes(Uri uri) async {
@@ -585,16 +598,20 @@ class _JmImageLoggingInterceptor extends Interceptor {
 class JmImageMetadata {
   final Uri requestUri;
   final int photoId;
+  final String filename;
   final String filenameWithoutExtension;
   final int scrambleId;
+  final bool hasScrambleId;
   final bool isGif;
   final bool isCover;
 
   const JmImageMetadata({
     required this.requestUri,
     required this.photoId,
+    required this.filename,
     required this.filenameWithoutExtension,
     required this.scrambleId,
+    required this.hasScrambleId,
     required this.isGif,
     required this.isCover,
   });
@@ -628,16 +645,19 @@ class JmImageMetadata {
         : filename.substring(0, dot);
     final query = Map<String, String>.from(uri.queryParameters)
       ..remove('scramble_id');
+    final rawScrambleId = uri.queryParameters['scramble_id'];
     final scrambleId = isCover
         ? JmConstants.scramble220980
-        : (int.tryParse(uri.queryParameters['scramble_id'] ?? '') ??
-              JmConstants.scramble220980);
+        : (int.tryParse(rawScrambleId ?? '') ?? JmConstants.scramble220980);
 
     return JmImageMetadata(
       requestUri: uri.replace(queryParameters: query.isEmpty ? null : query),
       photoId: photoId,
+      filename: filename,
       filenameWithoutExtension: filenameWithoutExtension,
       scrambleId: scrambleId,
+      hasScrambleId:
+          !isCover && rawScrambleId != null && rawScrambleId.isNotEmpty,
       isGif: filename.toLowerCase().endsWith('.gif'),
       isCover: isCover,
     );
@@ -656,21 +676,42 @@ class JmImageCache {
 
   JmImageCache({ImageCacheLruStore? lru}) : _lru = lru ?? ImageCacheLruStore();
 
+  String pendingKeyFor(String key) {
+    return _lruKeyForStorageKey(_primaryStorageKeyFor(key));
+  }
+
   Future<Uint8List?> read(String key) async {
-    final file = await _fileFor(key);
-    if (!await file.exists()) return null;
-    await _lru.touch(_lruKeyFor(key));
-    return file.readAsBytes();
+    final primaryStorageKey = _primaryStorageKeyFor(key);
+    for (final candidate in _storageKeysForRead(key)) {
+      final file = await _fileForStorageKey(
+        candidate.storageKey,
+        candidate.cover,
+      );
+      if (!await file.exists()) continue;
+      final bytes = await file.readAsBytes();
+      unawaited(
+        _lru
+            .touch(_lruKeyForStorageKey(candidate.storageKey))
+            .catchError((_) {}),
+      );
+      if (candidate.storageKey != primaryStorageKey) {
+        unawaited(write(key, bytes).catchError((_) {}));
+      }
+      return bytes;
+    }
+    return null;
   }
 
   Future<void> write(String key, Uint8List bytes) async {
-    final file = await _fileFor(key);
+    final storageKey = _primaryStorageKeyFor(key);
+    final cover = _isCoverUrl(key);
+    final file = await _fileForStorageKey(storageKey, cover);
     await file.parent.create(recursive: true);
     final temp = File('${file.path}.tmp');
     await temp.writeAsBytes(bytes, flush: true);
     await temp.rename(file.path);
-    await _lru.touch(_lruKeyFor(key));
-    await _evictIfNeeded(_isCoverUrl(key));
+    await _lru.touch(_lruKeyForStorageKey(storageKey));
+    await _evictIfNeeded(cover);
   }
 
   /// 主动触发缓存清理。应用冷启动时调用一次即可。
@@ -779,9 +820,35 @@ class JmImageCache {
     await _lru.writeAll(lru);
   }
 
-  String _lruKeyFor(String url) {
-    final digest = md5.convert(Uint8List.fromList(url.codeUnits)).toString();
-    return _isCoverUrl(url) ? 'cover:$digest' : 'image:$digest';
+  String _primaryStorageKeyFor(String url) {
+    try {
+      final metadata = JmImageMetadata.fromUrl(url);
+      if (!metadata.isCover) {
+        return 'photos/${metadata.photoId}/${metadata.filename}';
+      }
+    } catch (_) {
+      // Fall back to the legacy full-url key for unsupported URLs.
+    }
+    return url;
+  }
+
+  List<({String storageKey, bool cover})> _storageKeysForRead(String url) {
+    final cover = _isCoverUrl(url);
+    final primary = _primaryStorageKeyFor(url);
+    if (primary == url) {
+      return [(storageKey: url, cover: cover)];
+    }
+    return [
+      (storageKey: primary, cover: cover),
+      (storageKey: url, cover: cover),
+    ];
+  }
+
+  String _lruKeyForStorageKey(String storageKey) {
+    final digest = md5
+        .convert(Uint8List.fromList(storageKey.codeUnits))
+        .toString();
+    return _isCoverUrl(storageKey) ? 'cover:$digest' : 'image:$digest';
   }
 
   String _lruKeyForFile(File file, bool cover) {
@@ -789,9 +856,11 @@ class JmImageCache {
     return cover ? 'cover:$digest' : 'image:$digest';
   }
 
-  Future<File> _fileFor(String key) async {
-    final directory = await _directoryFor(_isCoverUrl(key));
-    final digest = md5.convert(Uint8List.fromList(key.codeUnits)).toString();
+  Future<File> _fileForStorageKey(String storageKey, bool cover) async {
+    final directory = await _directoryFor(cover);
+    final digest = md5
+        .convert(Uint8List.fromList(storageKey.codeUnits))
+        .toString();
     return File('${directory.path}/$digest.jpg');
   }
 

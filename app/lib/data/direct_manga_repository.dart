@@ -5,6 +5,7 @@ import 'package:flutter/painting.dart';
 
 import '../network/jm/jm_client.dart';
 import '../network/jm/jm_image_service.dart';
+import '../network/jm/jm_models.dart';
 import '../network/jm/jm_session_store.dart';
 import '../local/local_manga_store.dart';
 import '../models/album.dart';
@@ -87,15 +88,53 @@ class DirectMangaRepository implements MangaRepository {
 
   @override
   Future<PhotoDetail> getPhotoDetail(String photoId) async {
+    return refreshPhotoDetail(photoId);
+  }
+
+  Future<PhotoDetail?> getCachedPhotoDetail(String photoId) async {
+    final manifest = await localStore.getChapterManifest(photoId);
+    if (manifest == null || manifest.imageNames.isEmpty) return null;
+    return _photoDetailFromManifest(manifest);
+  }
+
+  Future<PhotoDetail> refreshPhotoDetail(String photoId) async {
     return _withSession(() async {
       final chapter = await client.getChapter(photoId);
+      await localStore.saveChapterManifest(
+        ChapterManifest(
+          photoId: chapter.id,
+          albumId: chapter.albumId,
+          title: chapter.title,
+          imageNames: chapter.imageNames,
+        ),
+      );
       final scrambleId = await client.getScrambleId(photoId);
-      final imageUrls = [
-        for (final imageName in chapter.imageNames)
-          client.imageUrl(chapter.id, imageName, scrambleId: scrambleId),
-      ];
-      return photoDetailFromJm(chapter, imageUrls);
+      return _photoDetailFromChapter(chapter, scrambleId: scrambleId);
     });
+  }
+
+  PhotoDetail _photoDetailFromManifest(ChapterManifest manifest) {
+    return PhotoDetail(
+      photoId: manifest.photoId,
+      title: manifest.title,
+      albumId: manifest.albumId,
+      pageCount: manifest.pageCount,
+      imageUrls: [
+        for (final imageName in manifest.imageNames)
+          client.imageUrl(manifest.photoId, imageName),
+      ],
+    );
+  }
+
+  PhotoDetail _photoDetailFromChapter(
+    JmChapter chapter, {
+    required int scrambleId,
+  }) {
+    final imageUrls = [
+      for (final imageName in chapter.imageNames)
+        client.imageUrl(chapter.id, imageName, scrambleId: scrambleId),
+    ];
+    return photoDetailFromJm(chapter, imageUrls);
   }
 
   @override

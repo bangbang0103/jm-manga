@@ -69,11 +69,7 @@ void main() {
       for (var i = 0; i < 55; i++) {
         await records.upsertFavorite(
           'jm:alice',
-          AlbumItem(
-            albumId: '$i',
-            title: 'Album $i',
-            tags: const [],
-          ),
+          AlbumItem(albumId: '$i', title: 'Album $i', tags: const []),
           syncStatus: 'synced',
         );
       }
@@ -89,11 +85,7 @@ void main() {
 
       await records.upsertFavorite(
         'jm:alice',
-        AlbumItem(
-          albumId: '54',
-          title: 'Updated',
-          tags: const [],
-        ),
+        AlbumItem(albumId: '54', title: 'Updated', tags: const []),
         syncStatus: 'synced',
       );
       final updated = await records.favoriteRecords('jm:alice');
@@ -121,22 +113,57 @@ void main() {
       expect(sizes['database'], greaterThanOrEqualTo(0));
     });
 
+    test('upserts and reads chapter manifest', () async {
+      await records.upsertChapterManifest(
+        ChapterManifest(
+          photoId: 'p1',
+          albumId: 'a1',
+          title: 'Chapter 1',
+          imageNames: const ['00001.webp', '00002.webp'],
+        ),
+      );
+
+      final manifest = await records.chapterManifest('p1');
+
+      expect(manifest, isNotNull);
+      expect(manifest!.albumId, 'a1');
+      expect(manifest.title, 'Chapter 1');
+      expect(manifest.imageNames, ['00001.webp', '00002.webp']);
+      expect(manifest.pageCount, 2);
+    });
+
     test('deleteAlbumProgress removes only matching album and owner', () async {
       await records.saveProgress(
         'jm:alice',
-        progress(albumId: '1', photoId: 'p1', lastReadAt: '2026-01-01T00:00:00Z'),
+        progress(
+          albumId: '1',
+          photoId: 'p1',
+          lastReadAt: '2026-01-01T00:00:00Z',
+        ),
       );
       await records.saveProgress(
         'jm:alice',
-        progress(albumId: '1', photoId: 'p2', lastReadAt: '2026-01-02T00:00:00Z'),
+        progress(
+          albumId: '1',
+          photoId: 'p2',
+          lastReadAt: '2026-01-02T00:00:00Z',
+        ),
       );
       await records.saveProgress(
         'jm:alice',
-        progress(albumId: '2', photoId: 'p3', lastReadAt: '2026-01-03T00:00:00Z'),
+        progress(
+          albumId: '2',
+          photoId: 'p3',
+          lastReadAt: '2026-01-03T00:00:00Z',
+        ),
       );
       await records.saveProgress(
         'jm:bob',
-        progress(albumId: '1', photoId: 'p4', lastReadAt: '2026-01-04T00:00:00Z'),
+        progress(
+          albumId: '1',
+          photoId: 'p4',
+          lastReadAt: '2026-01-04T00:00:00Z',
+        ),
       );
 
       final deleted = await records.deleteAlbumProgress('jm:alice', '1');
@@ -152,21 +179,33 @@ void main() {
     test('deleteAlbumProgressList removes multiple albums', () async {
       await records.saveProgress(
         'jm:alice',
-        progress(albumId: '1', photoId: 'p1', lastReadAt: '2026-01-01T00:00:00Z'),
+        progress(
+          albumId: '1',
+          photoId: 'p1',
+          lastReadAt: '2026-01-01T00:00:00Z',
+        ),
       );
       await records.saveProgress(
         'jm:alice',
-        progress(albumId: '2', photoId: 'p2', lastReadAt: '2026-01-02T00:00:00Z'),
+        progress(
+          albumId: '2',
+          photoId: 'p2',
+          lastReadAt: '2026-01-02T00:00:00Z',
+        ),
       );
       await records.saveProgress(
         'jm:alice',
-        progress(albumId: '3', photoId: 'p3', lastReadAt: '2026-01-03T00:00:00Z'),
+        progress(
+          albumId: '3',
+          photoId: 'p3',
+          lastReadAt: '2026-01-03T00:00:00Z',
+        ),
       );
 
-      final deleted = await records.deleteAlbumProgressList(
-        'jm:alice',
-        ['1', '2'],
-      );
+      final deleted = await records.deleteAlbumProgressList('jm:alice', [
+        '1',
+        '2',
+      ]);
       expect(deleted, 2);
 
       final recent = await records.recentProgress('jm:alice');

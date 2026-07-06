@@ -71,3 +71,19 @@ class PhotoDetail {
     required this.imageUrls,
   });
 }
+
+class ChapterManifest {
+  final String photoId;
+  final String albumId;
+  final String title;
+  final List<String> imageNames;
+  final int pageCount;
+
+  ChapterManifest({
+    required this.photoId,
+    required this.albumId,
+    required this.title,
+    required this.imageNames,
+    int? pageCount,
+  }) : pageCount = pageCount ?? imageNames.length;
+}

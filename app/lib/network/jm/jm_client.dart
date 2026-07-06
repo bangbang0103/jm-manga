@@ -36,6 +36,7 @@ class JmClient {
   int _imageDomainIndex = 0;
   bool _domainsUpdated = false;
   Future<void>? _domainUpdateFuture;
+  final _scrambleIdFutures = <String, Future<int>>{};
   final List<Uri> _customApiUris;
   final List<Uri> _customImageUris;
 
@@ -45,8 +46,7 @@ class JmClient {
 
   List<String> get imageDomains => _imageDomains;
 
-  Set<String> get customApiHosts =>
-      _customApiUris.map((u) => u.host).toSet();
+  Set<String> get customApiHosts => _customApiUris.map((u) => u.host).toSet();
 
   Set<String> get customImageHosts =>
       _customImageUris.map((u) => u.host).toSet();
@@ -167,29 +167,22 @@ class JmClient {
     // 自定义域名优先；动态更新返回的官方域名作为兜底，避免自定义节点异常时完全不可用。
     if (config.apiDomains.isNotEmpty) {
       _apiDomains = List.unmodifiable(
-        _mergeDomains(
-          _customApiUris.map((u) => u.host),
-          config.apiDomains,
-        ),
+        _mergeDomains(_customApiUris.map((u) => u.host), config.apiDomains),
       );
       _apiDomainIndex = 0;
     }
     if (config.imageDomains.isNotEmpty) {
       _imageDomains = List.unmodifiable(
-        _mergeDomains(
-          _customImageUris.map((u) => u.host),
-          config.imageDomains,
-        ),
+        _mergeDomains(_customImageUris.map((u) => u.host), config.imageDomains),
       );
       _imageDomainIndex = 0;
     }
   }
 
   JmDomainConfig _currentDomainConfig() {
-    final apiScheme =
-        _apiDomainIndex < _customApiUris.length
-            ? _customApiUris[_apiDomainIndex].scheme
-            : 'https';
+    final apiScheme = _apiDomainIndex < _customApiUris.length
+        ? _customApiUris[_apiDomainIndex].scheme
+        : 'https';
     return JmDomainConfig(
       apiDomains: [_apiDomains[_apiDomainIndex]],
       imageDomains: [_imageDomains[_imageDomainIndex]],
@@ -215,10 +208,12 @@ class JmClient {
     Map<String, Object?> queryParameters = const {},
   }) {
     if (_imageDomainIndex < _customImageUris.length) {
-      return _customImageUris[_imageDomainIndex].replace(
-        path: path,
-        queryParameters: JmDomainConfig.cleanQuery(queryParameters),
-      ).toString();
+      return _customImageUris[_imageDomainIndex]
+          .replace(
+            path: path,
+            queryParameters: JmDomainConfig.cleanQuery(queryParameters),
+          )
+          .toString();
     }
     return domains.imageUri(path, queryParameters: queryParameters).toString();
   }
@@ -417,6 +412,20 @@ class JmClient {
   }
 
   Future<int> getScrambleId(String chapterId) async {
+    final cached = _scrambleIdFutures[chapterId];
+    if (cached != null) return cached;
+
+    final future = _fetchScrambleId(chapterId);
+    _scrambleIdFutures[chapterId] = future;
+    try {
+      return await future;
+    } catch (_) {
+      _scrambleIdFutures.remove(chapterId);
+      rethrow;
+    }
+  }
+
+  Future<int> _fetchScrambleId(String chapterId) async {
     final page = await getScramblePage(chapterId);
     final match = RegExp(r'var scramble_id = (\d+)').firstMatch(page);
     return int.tryParse(match?.group(1) ?? '') ?? JmConstants.scramble220980;
@@ -608,7 +617,8 @@ class _JmLoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     options.extra[_startKey] = DateTime.now().millisecondsSinceEpoch;
-    final tokenparam = options.headers['tokenparam'] ?? options.headers['Tokenparam'];
+    final tokenparam =
+        options.headers['tokenparam'] ?? options.headers['Tokenparam'];
     globalLogger.d(
       'JM REQ ${options.method} ${options.uri} (tokenparam=$tokenparam)',
     );

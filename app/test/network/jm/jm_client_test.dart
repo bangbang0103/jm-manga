@@ -48,6 +48,26 @@ void main() {
       expect(headers['token'], '68afe23a1ff9e7a3f9c0a846bbf87e6f');
     });
 
+    test('memoizes scramble id requests by chapter id', () async {
+      final adapter = _ScramblePageAdapter('var scramble_id = 345678;');
+      final client = JmClient(
+        dio: Dio()..httpClientAdapter = adapter,
+        domains: const JmDomainConfig(apiDomains: ['api.example.test']),
+        timestampProvider: () => 1700566805,
+        autoUpdateDomains: false,
+      );
+
+      final concurrent = await Future.wait([
+        client.getScrambleId('10'),
+        client.getScrambleId('10'),
+      ]);
+      final repeated = await client.getScrambleId('10');
+
+      expect(concurrent, [345678, 345678]);
+      expect(repeated, 345678);
+      expect(adapter.requests.length, 1);
+    });
+
     test('builds CDN cover and image urls', () {
       final client = JmClient(
         domains: const JmDomainConfig(imageDomains: ['img.example.test']),
@@ -131,28 +151,31 @@ void main() {
       expect(toggleRequest.headers['Cookie'], 'AVS=session-token');
     });
 
-    test('cycles through custom API domains then falls back to official', () async {
-      final adapter = _ConditionalApiAdapter(
-        failHosts: const {'api.local'},
-        successData: _favoriteData,
-      );
-      final client = JmClient(
-        dio: Dio()..httpClientAdapter = adapter,
-        domains: const JmDomainConfig(apiDomains: ['fallback.test']),
-        customApiDomains: const ['http://api.local:8080'],
-        timestampProvider: () => 1700566805,
-        autoUpdateDomains: false,
-      );
+    test(
+      'cycles through custom API domains then falls back to official',
+      () async {
+        final adapter = _ConditionalApiAdapter(
+          failHosts: const {'api.local'},
+          successData: _favoriteData,
+        );
+        final client = JmClient(
+          dio: Dio()..httpClientAdapter = adapter,
+          domains: const JmDomainConfig(apiDomains: ['fallback.test']),
+          customApiDomains: const ['http://api.local:8080'],
+          timestampProvider: () => 1700566805,
+          autoUpdateDomains: false,
+        );
 
-      // Custom domain fails, then fallback succeeds.
-      final result = await client.getFavoritePage(page: 1);
-      expect(result.items, isNotEmpty);
+        // Custom domain fails, then fallback succeeds.
+        final result = await client.getFavoritePage(page: 1);
+        expect(result.items, isNotEmpty);
 
-      expect(adapter.requests.length, 2);
-      expect(adapter.requests.first.uri.host, 'api.local');
-      expect(adapter.requests.first.uri.port, 8080);
-      expect(adapter.requests.last.uri.host, 'fallback.test');
-    });
+        expect(adapter.requests.length, 2);
+        expect(adapter.requests.first.uri.host, 'api.local');
+        expect(adapter.requests.first.uri.port, 8080);
+        expect(adapter.requests.last.uri.host, 'fallback.test');
+      },
+    );
   });
 }
 
@@ -228,6 +251,26 @@ class _ConditionalApiAdapter implements HttpClientAdapter {
       200,
       headers: {},
     );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _ScramblePageAdapter implements HttpClientAdapter {
+  final String body;
+  final List<RequestOptions> requests = [];
+
+  _ScramblePageAdapter(this.body);
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requests.add(options);
+    return ResponseBody.fromString(body, 200);
   }
 
   @override
