@@ -68,6 +68,28 @@ void main() {
       expect(adapter.requests.length, 1);
     });
 
+    test('does not memoize failed scramble id requests', () async {
+      final adapter = _SequentialScramblePageAdapter([
+        const _ScrambleResponse('', 502),
+        const _ScrambleResponse('var scramble_id = 456789;', 200),
+      ]);
+      final client = JmClient(
+        dio: Dio()..httpClientAdapter = adapter,
+        domains: const JmDomainConfig(apiDomains: ['api.example.test']),
+        timestampProvider: () => 1700566805,
+        autoUpdateDomains: false,
+      );
+
+      await expectLater(
+        client.getScrambleId('10'),
+        throwsA(isA<DioException>()),
+      );
+      final recovered = await client.getScrambleId('10');
+
+      expect(recovered, 456789);
+      expect(adapter.requests.length, 2);
+    });
+
     test('builds CDN cover and image urls', () {
       final client = JmClient(
         domains: const JmDomainConfig(imageDomains: ['img.example.test']),
@@ -271,6 +293,34 @@ class _ScramblePageAdapter implements HttpClientAdapter {
   ) async {
     requests.add(options);
     return ResponseBody.fromString(body, 200);
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _ScrambleResponse {
+  final String body;
+  final int statusCode;
+
+  const _ScrambleResponse(this.body, this.statusCode);
+}
+
+class _SequentialScramblePageAdapter implements HttpClientAdapter {
+  final List<_ScrambleResponse> responses;
+  final List<RequestOptions> requests = [];
+
+  _SequentialScramblePageAdapter(this.responses);
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requests.add(options);
+    final response = responses.removeAt(0);
+    return ResponseBody.fromString(response.body, response.statusCode);
   }
 
   @override

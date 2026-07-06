@@ -132,6 +132,23 @@ void main() {
       expect(manifest.pageCount, 2);
     });
 
+    test('ignores corrupted chapter manifest image list', () async {
+      await db.insert('chapter_manifests', {
+        'photo_id': 'bad',
+        'album_id': 'a1',
+        'title': 'Broken Chapter',
+        'image_names': 'not json',
+        'page_count': 'not a number',
+        'cached_at': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      final manifest = await records.chapterManifest('bad');
+
+      expect(manifest, isNotNull);
+      expect(manifest!.imageNames, isEmpty);
+      expect(manifest.pageCount, 0);
+    });
+
     test('deleteAlbumProgress removes only matching album and owner', () async {
       await records.saveProgress(
         'jm:alice',

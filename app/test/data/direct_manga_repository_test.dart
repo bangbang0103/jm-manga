@@ -242,6 +242,27 @@ void main() {
       expect(client.chapterCookies, {'AVS': 'saved-session'});
     });
 
+    test('getCachedPhotoDetail returns null for empty manifest', () async {
+      final localStore = _createLocalStore();
+      final repo = DirectMangaRepository(
+        client: FakeJmClient(),
+        ownerKey: 'device:test',
+        localStore: localStore,
+        sessionStore: MemorySessionStore(),
+      );
+
+      await localStore.saveChapterManifest(
+        ChapterManifest(
+          photoId: 'empty',
+          albumId: 'album-empty',
+          title: 'Empty',
+          imageNames: const [],
+        ),
+      );
+
+      expect(await repo.getCachedPhotoDetail('empty'), isNull);
+    });
+
     test(
       'getPhotoDetail saves chapter manifest for cache-first reads',
       () async {

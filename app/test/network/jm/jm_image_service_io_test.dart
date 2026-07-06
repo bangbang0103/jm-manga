@@ -14,6 +14,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MemoryImageCache extends JmImageCache {
   final _store = <String, Uint8List>{};
 
+  void seed(String key, Uint8List bytes) {
+    _store[key] = bytes;
+  }
+
   @override
   Future<Uint8List?> read(String key) async => _store[key];
 
@@ -375,6 +379,85 @@ void main() {
   });
 
   group('JmImageService cache-first photo loading', () {
+    test(
+      'returns cached no-scramble photo bytes without fetching key',
+      () async {
+        final client = _ScrambleClient();
+        final cache = _MemoryImageCache();
+        final cachedBytes = Uint8List.fromList([9, 9, 9]);
+        cache.seed('https://cdn.test/media/photos/10/00001.webp', cachedBytes);
+        var requests = 0;
+        final dio = Dio();
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              requests += 1;
+              handler.resolve(
+                Response<dynamic>(
+                  requestOptions: options,
+                  data: <int>[1],
+                  statusCode: 200,
+                ),
+              );
+            },
+          ),
+        );
+
+        final service = JmImageService(dio: dio, client: client, cache: cache);
+
+        final bytes = await service.loadDecodedBytes(
+          'https://cdn.test/media/photos/10/00001.webp',
+        );
+
+        expect(bytes, cachedBytes);
+        expect(requests, 0);
+        expect(client.scrambleCalls, 0);
+      },
+    );
+
+    test('coalesces concurrent loads with the same canonical key', () async {
+      final client = _ScrambleClient();
+      var requests = 0;
+      final dio = Dio();
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) async {
+            requests += 1;
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+            handler.resolve(
+              Response<dynamic>(
+                requestOptions: options,
+                data: <int>[7],
+                statusCode: 200,
+              ),
+            );
+          },
+        ),
+      );
+
+      final service = JmImageService(
+        dio: dio,
+        client: client,
+        cache: _MemoryImageCache(),
+      );
+
+      final results = await Future.wait([
+        service.loadDecodedBytes(
+          'https://cdn.test/media/photos/10/00001.gif?scramble_id=1',
+        ),
+        service.loadDecodedBytes(
+          'https://cdn.test/media/photos/10/00001.gif?scramble_id=2',
+        ),
+      ]);
+
+      expect(results, [
+        Uint8List.fromList([7]),
+        Uint8List.fromList([7]),
+      ]);
+      expect(requests, 1);
+      expect(client.scrambleCalls, 0);
+    });
+
     test(
       'fetches scramble id only when a no-scramble photo url misses cache',
       () async {
