@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/direct_manga_repository.dart';
 import '../data/manga_repository.dart';
 import '../models/album.dart';
+import '../models/comment.dart';
 import '../models/reading_progress.dart';
 import '../utils/tag_query_parser.dart';
 import 'repository_provider.dart';
@@ -466,3 +467,80 @@ final albumProgressProvider =
       final repo = ref.watch(apiRepositoryProvider);
       return repo.getAlbumProgress(albumId);
     });
+
+final albumCommentsProvider = StateNotifierProvider.family<
+  AlbumCommentsNotifier,
+  AsyncValue<CommentPage>,
+  String
+>((ref, albumId) {
+  final repo = ref.watch(apiRepositoryProvider);
+  return AlbumCommentsNotifier(repo, albumId);
+});
+
+class AlbumCommentsNotifier extends StateNotifier<AsyncValue<CommentPage>> {
+  final MangaRepository repo;
+  final String albumId;
+  int _page = 1;
+  bool _hasMore = true;
+  bool _loadingMore = false;
+
+  bool get hasMore => _hasMore;
+  bool get isLoadingMore => _loadingMore;
+
+  AlbumCommentsNotifier(this.repo, this.albumId)
+    : super(const AsyncValue.loading()) {
+    load();
+  }
+
+  Future<void> load() async {
+    _page = 1;
+    _hasMore = true;
+    state = const AsyncValue.loading();
+    await _fetch(page: _page);
+  }
+
+  Future<void> refresh() => load();
+
+  Future<void> loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    _loadingMore = true;
+    try {
+      await _fetch(page: _page + 1, append: true);
+    } finally {
+      _loadingMore = false;
+    }
+  }
+
+  Future<void> _fetch({required int page, bool append = false}) async {
+    try {
+      final results = await repo.getComments(albumId, page: page);
+      if (results.items.isEmpty) {
+        _hasMore = false;
+      } else {
+        _page = page;
+        _hasMore = results.items.length >= 10;
+      }
+
+      if (mounted) {
+        if (append) {
+          final current = state.valueOrNull;
+          if (current != null) {
+            state = AsyncValue.data(
+              CommentPage(
+                total: results.total,
+                items: [...current.items, ...results.items],
+              ),
+            );
+          } else {
+            state = AsyncValue.data(results);
+          }
+        } else {
+          state = AsyncValue.data(results);
+        }
+      }
+    } catch (e, st) {
+      if (mounted) state = AsyncValue.error(e, st);
+    }
+  }
+}
+

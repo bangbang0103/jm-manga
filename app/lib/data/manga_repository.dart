@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/painting.dart';
 
 import '../models/album.dart';
+import '../models/comment.dart';
 import '../models/reading_progress.dart';
 
 abstract interface class MangaRepository {
@@ -23,6 +24,8 @@ abstract interface class MangaRepository {
   Future<AlbumDetail> getAlbumDetail(String albumId);
 
   Future<PhotoDetail> getPhotoDetail(String photoId);
+
+  Future<CommentPage> getComments(String albumId, {int page = 1});
 
   String coverUrl(String albumId, {String size = ''});
 

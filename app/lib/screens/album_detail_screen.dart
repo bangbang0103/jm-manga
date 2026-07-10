@@ -10,6 +10,7 @@ import '../models/reading_progress.dart';
 import '../models/reader_initial_data.dart';
 import '../widgets/animated_favorite_button.dart';
 import '../widgets/app_dropdown.dart';
+import '../widgets/comment_list.dart';
 import '../widgets/error_placeholder.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/retryable_image.dart';
@@ -31,8 +32,11 @@ class AlbumDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<AlbumDetailScreen> createState() => _AlbumDetailScreenState();
 }
 
-class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
-  final _scrollController = ScrollController();
+class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  final _outerScrollController = ScrollController();
+  final _chapterScrollController = ScrollController();
   final List<GlobalKey> _chapterKeys = [];
   int? _jumpTarget;
   bool _showScrollToTop = false;
@@ -40,8 +44,9 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(() {
-      final show = _scrollController.offset > 400;
+    _tabController = TabController(length: 2, vsync: this);
+    _outerScrollController.addListener(() {
+      final show = _outerScrollController.offset > 400;
       if (show != _showScrollToTop) {
         setState(() => _showScrollToTop = show);
       }
@@ -50,7 +55,9 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _tabController.dispose();
+    _outerScrollController.dispose();
+    _chapterScrollController.dispose();
     super.dispose();
   }
 
@@ -118,18 +125,6 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
 
   String _stringValue(dynamic value) => value == null ? '' : value.toString();
 
-  int? _progressPercent(ReadingProgress? progress) {
-    if (progress == null) return null;
-    if (progress.isFinished) return 100;
-    final pageCount = progress.pageCount;
-    if (pageCount != null && pageCount > 0) {
-      return ((progress.imageIndex + 1) / pageCount * 100)
-          .round()
-          .clamp(0, 99);
-    }
-    return null;
-  }
-
   ReadingProgress? _findProgress(
     List<ReadingProgress> progressList,
     String photoId,
@@ -167,17 +162,6 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
     return episodes.first['photo_id'] as String?;
   }
 
-  String _chapterStatusText(
-    ReadingProgress? progress,
-    int? percent,
-    AppLocalizations l10n,
-  ) {
-    if (progress == null) return l10n.chapterUnread;
-    if (progress.isFinished) return l10n.badgeFinished;
-    if (percent != null) return l10n.badgePercent(percent);
-    return l10n.chapterReading;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -204,15 +188,11 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
             ..clear()
             ..addAll(List.generate(episodes.length, (_) => GlobalKey()));
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(albumDetailProvider(widget.albumId));
-              ref.invalidate(albumProgressProvider(widget.albumId));
-            },
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
+          return NestedScrollView(
+            controller: _outerScrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
                 SliverAppBar(
                   pinned: true,
                   title: Row(
@@ -337,132 +317,37 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                           album.description,
                           style: theme.textTheme.bodyMedium,
                         ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              l10n.chaptersTitle(episodes.length),
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (episodes.length > 1)
-                              AppDropdownMenu<int>(
-                                value: _jumpTarget ?? 0,
-                                items: List.generate(episodes.length, (i) => i),
-                                width: 160,
-                                label: l10n.jumpToHint,
-                                requestFocusOnTap: true,
-                                labelFor: (index) =>
-                                    l10n.chapterTitle(index + 1),
-                                trailingIconFor: (index) {
-                                  final photoId = _stringValue(
-                                    episodes[index]['photo_id'],
-                                  );
-                                  final progress = _findProgress(
-                                    progressList,
-                                    photoId,
-                                  );
-                                  if (progress == null) {
-                                    return Icon(
-                                      Icons.circle_outlined,
-                                      size: 16,
-                                      color: theme.colorScheme.onSurfaceVariant
-                                          .withValues(alpha: 0.4),
-                                    );
-                                  }
-                                  if (progress.isFinished) {
-                                    return Icon(
-                                      Icons.check_circle,
-                                      size: 16,
-                                      color: theme.colorScheme.primary,
-                                    );
-                                  }
-                                  return Icon(
-                                    Icons.play_circle_outline,
-                                    size: 16,
-                                    color: theme.colorScheme.secondary,
-                                  );
-                                },
-                                onSelected: (index) {
-                                  if (index != null) _jumpToChapter(index);
-                                },
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final ep = episodes[index];
-                      final photoId = _stringValue(ep['photo_id']);
-                      final title = _stringValue(ep['title']).isNotEmpty
-                          ? _stringValue(ep['title'])
-                          : l10n.chapterTitle(index + 1);
-                      final progress = _findProgress(progressList, photoId);
-                      final percent = _progressPercent(progress);
-
-                      final fillAlpha =
-                          theme.brightness == Brightness.dark ? 0.18 : 0.12;
-                      final statusColor = percent != null
-                          ? theme.colorScheme.onSurface
-                          : theme.colorScheme.onSurfaceVariant;
-
-                      return Card(
-                        key: _chapterKeys[index],
-                        margin: const EdgeInsets.only(bottom: 8),
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          children: [
-                            if (percent != null)
-                              Positioned.fill(
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: FractionallySizedBox(
-                                    widthFactor: percent / 100,
-                                    child: Container(
-                                      color: theme.colorScheme.primary
-                                          .withValues(alpha: fillAlpha),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    theme.colorScheme.surfaceContainerHigh,
-                                foregroundColor:
-                                    theme.colorScheme.onSurfaceVariant,
-                                child: Text('${index + 1}'),
-                              ),
-                              title: Text(title),
-                              trailing: Text(
-                                _chapterStatusText(progress, percent, l10n),
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: statusColor,
-                                ),
-                              ),
-                              onTap: () => context.push(
-                                '/reader/$photoId',
-                                extra: ReaderInitialData(
-                                  album: album,
-                                  progressList: progressList,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }, childCount: episodes.length),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _TabBarDelegate(
+                    TabBar(
+                      controller: _tabController,
+                      tabs: [
+                        Tab(text: l10n.tabChapters),
+                        Tab(text: l10n.tabComments),
+                      ],
+                    ),
                   ),
                 ),
-                const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                _ChaptersTab(
+                  album: album,
+                  progressList: progressList,
+                  chapterKeys: _chapterKeys,
+                  jumpTarget: _jumpTarget,
+                  scrollController: _chapterScrollController,
+                  onJump: _jumpToChapter,
+                ),
+                CommentListWidget(albumId: album.albumId),
               ],
             ),
           );
@@ -520,7 +405,7 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                   heroTag: 'album_scroll_top_${widget.albumId}',
                   backgroundColor: theme.colorScheme.surfaceContainerHigh,
                   foregroundColor: theme.colorScheme.onSurface,
-                  onPressed: () => _scrollController.animateTo(
+                  onPressed: () => _outerScrollController.animateTo(
                     0,
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOut,
@@ -557,4 +442,218 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
       ),
     );
   }
+}
+
+class _ChaptersTab extends StatelessWidget {
+  final AlbumDetail album;
+  final List<ReadingProgress> progressList;
+  final List<GlobalKey> chapterKeys;
+  final int? jumpTarget;
+  final ScrollController scrollController;
+  final ValueChanged<int> onJump;
+
+  const _ChaptersTab({
+    required this.album,
+    required this.progressList,
+    required this.chapterKeys,
+    this.jumpTarget,
+    required this.scrollController,
+    required this.onJump,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final episodes = album.episodes;
+
+    return CustomScrollView(
+      controller: scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          sliver: SliverToBoxAdapter(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  l10n.chaptersTitle(episodes.length),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (episodes.length > 1)
+                  AppDropdownMenu<int>(
+                    value: jumpTarget ?? 0,
+                    items: List.generate(episodes.length, (i) => i),
+                    width: 160,
+                    label: l10n.jumpToHint,
+                    requestFocusOnTap: true,
+                    labelFor: (index) => l10n.chapterTitle(index + 1),
+                    trailingIconFor: (index) {
+                      final photoId = _stringValue(episodes[index]['photo_id']);
+                      final progress = _findProgress(progressList, photoId);
+                      if (progress == null) {
+                        return Icon(
+                          Icons.circle_outlined,
+                          size: 16,
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.4),
+                        );
+                      }
+                      if (progress.isFinished) {
+                        return Icon(
+                          Icons.check_circle,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        );
+                      }
+                      return Icon(
+                        Icons.play_circle_outline,
+                        size: 16,
+                        color: theme.colorScheme.secondary,
+                      );
+                    },
+                    onSelected: (index) {
+                      if (index != null) onJump(index);
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final ep = episodes[index];
+              final photoId = _stringValue(ep['photo_id']);
+              final title = _stringValue(ep['title']).isNotEmpty
+                  ? _stringValue(ep['title'])
+                  : l10n.chapterTitle(index + 1);
+              final progress = _findProgress(progressList, photoId);
+              final percent = _progressPercent(progress);
+
+              final fillAlpha =
+                  theme.brightness == Brightness.dark ? 0.18 : 0.12;
+              final statusColor = percent != null
+                  ? theme.colorScheme.onSurface
+                  : theme.colorScheme.onSurfaceVariant;
+
+              return Card(
+                key: chapterKeys[index],
+                margin: const EdgeInsets.only(bottom: 8),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  children: [
+                    if (percent != null)
+                      Positioned.fill(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: FractionallySizedBox(
+                            widthFactor: percent / 100,
+                            child: Container(
+                              color: theme.colorScheme.primary
+                                  .withValues(alpha: fillAlpha),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHigh,
+                        foregroundColor:
+                            theme.colorScheme.onSurfaceVariant,
+                        child: Text('${index + 1}'),
+                      ),
+                      title: Text(title),
+                      trailing: Text(
+                        _chapterStatusText(progress, percent, l10n),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: statusColor,
+                        ),
+                      ),
+                      onTap: () => context.push(
+                        '/reader/$photoId',
+                        extra: ReaderInitialData(
+                          album: album,
+                          progressList: progressList,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }, childCount: episodes.length),
+          ),
+        ),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+      ],
+    );
+  }
+
+  String _stringValue(dynamic value) => value == null ? '' : value.toString();
+
+  ReadingProgress? _findProgress(
+    List<ReadingProgress> progressList,
+    String photoId,
+  ) {
+    try {
+      return progressList.firstWhere((p) => p.photoId == photoId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  int? _progressPercent(ReadingProgress? progress) {
+    if (progress == null) return null;
+    if (progress.isFinished) return 100;
+    final pageCount = progress.pageCount;
+    if (pageCount != null && pageCount > 0) {
+      return ((progress.imageIndex + 1) / pageCount * 100)
+          .round()
+          .clamp(0, 99);
+    }
+    return null;
+  }
+
+  String _chapterStatusText(
+    ReadingProgress? progress,
+    int? percent,
+    AppLocalizations l10n,
+  ) {
+    if (progress == null) return l10n.chapterUnread;
+    if (progress.isFinished) return l10n.badgeFinished;
+    if (percent != null) return l10n.badgePercent(percent);
+    return l10n.chapterReading;
+  }
+}
+
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+
+  _TabBarDelegate(this.tabBar);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) => false;
 }

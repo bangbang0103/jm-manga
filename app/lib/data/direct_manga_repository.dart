@@ -9,6 +9,7 @@ import '../network/jm/jm_models.dart';
 import '../network/jm/jm_session_store.dart';
 import '../local/local_manga_store.dart';
 import '../models/album.dart';
+import '../models/comment.dart';
 import '../utils/app_logger.dart';
 import '../models/reading_progress.dart';
 import 'direct_manga_mapper.dart';
@@ -135,6 +136,12 @@ class DirectMangaRepository implements MangaRepository {
         client.imageUrl(chapter.id, imageName, scrambleId: scrambleId),
     ];
     return photoDetailFromJm(chapter, imageUrls);
+  }
+
+  @override
+  Future<CommentPage> getComments(String albumId, {int page = 1}) async {
+    final result = await client.getComments(albumId, page: page);
+    return commentPageFromJm(result, coverUrl: coverUrl);
   }
 
   @override

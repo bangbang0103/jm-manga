@@ -189,6 +189,79 @@ class JmChapter {
   }
 }
 
+class JmCommentPage {
+  final String total;
+  final List<JmComment> items;
+
+  const JmCommentPage({required this.total, required this.items});
+
+  factory JmCommentPage.fromJson(Map<String, dynamic> json) {
+    return JmCommentPage(
+      total: (json['total'] ?? '0').toString(),
+      items:
+          (json['list'] as List<dynamic>?)
+              ?.whereType<Map>()
+              .map((item) => JmComment.fromJson(item.cast<String, dynamic>()))
+              .toList() ??
+          const [],
+    );
+  }
+}
+
+class JmComment {
+  final String id;
+  final String uid;
+  final String username;
+  final int level;
+  final String levelName;
+  final String content;
+  final String likes;
+  final String addTime;
+  final String? photo;
+  final List<JmComment> replies;
+
+  const JmComment({
+    required this.id,
+    required this.uid,
+    required this.username,
+    required this.level,
+    required this.levelName,
+    required this.content,
+    required this.likes,
+    required this.addTime,
+    this.photo,
+    this.replies = const [],
+  });
+
+  factory JmComment.fromJson(Map<String, dynamic> json) {
+    final exp = json['expinfo'] as Map<String, dynamic>?;
+    final photo = json['photo']?.toString();
+    final isDefaultAvatar =
+        photo == null ||
+        photo.isEmpty ||
+        photo == 'nopic-Male.gif' ||
+        photo == 'nopic-Female.gif';
+
+    return JmComment(
+      id: json['CID']?.toString() ?? '',
+      uid: json['UID']?.toString() ?? '',
+      username: json['username']?.toString() ?? '',
+      level: _asInt(exp?['level']),
+      levelName: exp?['level_name']?.toString() ?? '',
+      content: json['content']?.toString() ?? '',
+      likes: json['likes']?.toString() ?? '0',
+      addTime: json['addtime']?.toString() ?? '',
+      photo: isDefaultAvatar ? null : photo,
+      replies:
+          (json['replys'] as List<dynamic>?)
+              ?.whereType<Map>()
+              .map((item) => JmComment.fromJson(item.cast<String, dynamic>()))
+              .toList() ??
+          const [],
+    );
+  }
+}
+
 int _asInt(dynamic value) {
   if (value is int) return value;
   if (value is double) return value.toInt();

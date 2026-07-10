@@ -572,6 +572,48 @@ abstract class AppLocalizations {
   /// **'Chapters ({count})'**
   String chaptersTitle(Object count);
 
+  /// No description provided for @tabChapters.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters'**
+  String get tabChapters;
+
+  /// No description provided for @tabComments.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get tabComments;
+
+  /// No description provided for @commentsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No comments yet'**
+  String get commentsEmpty;
+
+  /// No description provided for @commentsLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get commentsLoadMore;
+
+  /// No description provided for @commentsNoMore.
+  ///
+  /// In en, this message translates to:
+  /// **'No more comments'**
+  String get commentsNoMore;
+
+  /// No description provided for @commentReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'View {count} replies'**
+  String commentReplies(Object count);
+
+  /// No description provided for @commentHideReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide replies'**
+  String get commentHideReplies;
+
   /// No description provided for @jumpToHint.
   ///
   /// In en, this message translates to:

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/painting.dart';
 
+import 'package:jm_manga/models/comment.dart';
 import 'package:jm_manga/data/manga_repository.dart';
 import 'package:jm_manga/models/album.dart';
 import 'package:jm_manga/models/reading_progress.dart';
@@ -99,6 +100,10 @@ class FakeApiRepository implements MangaRepository {
 
   @override
   Future<Uint8List> downloadImage(String url) async => Uint8List(0);
+
+  @override
+  Future<CommentPage> getComments(String albumId, {int page = 1}) async =>
+      const CommentPage(total: '0', items: []);
 
   @override
   Future<PhotoDetail> getPhotoDetail(String photoId) async => PhotoDetail(

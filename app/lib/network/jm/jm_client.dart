@@ -23,6 +23,7 @@ class JmClient {
   static const categoriesFilterPath = '/categories/filter';
   static const loginPath = '/login';
   static const favoritePath = '/favorite';
+  static const forumPath = '/forum';
 
   final Dio dio;
   final TimestampProvider timestampProvider;
@@ -364,6 +365,15 @@ class JmClient {
 
   Future<Map<String, dynamic>> toggleFavorite(String albumId) {
     return _postDecodedJson(favoritePath, {'aid': albumId});
+  }
+
+  Future<JmCommentPage> getComments(String albumId, {int page = 1}) async {
+    final data = await _getDecodedJson(forumPath, {
+      'mode': 'manhua',
+      'aid': albumId,
+      'page': page,
+    });
+    return JmCommentPage.fromJson(data);
   }
 
   String coverUrl(String albumId, {String size = ''}) {

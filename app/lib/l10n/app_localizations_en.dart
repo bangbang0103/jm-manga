@@ -263,6 +263,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get tabChapters => 'Chapters';
+
+  @override
+  String get tabComments => 'Comments';
+
+  @override
+  String get commentsEmpty => 'No comments yet';
+
+  @override
+  String get commentsLoadMore => 'Loading…';
+
+  @override
+  String get commentsNoMore => 'No more comments';
+
+  @override
+  String commentReplies(Object count) {
+    return 'View $count replies';
+  }
+
+  @override
+  String get commentHideReplies => 'Hide replies';
+
+  @override
   String get jumpToHint => 'Jump to';
 
   @override

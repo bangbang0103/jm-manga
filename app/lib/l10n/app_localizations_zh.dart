@@ -262,6 +262,29 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get tabChapters => '章节';
+
+  @override
+  String get tabComments => '评论';
+
+  @override
+  String get commentsEmpty => '暂无评论';
+
+  @override
+  String get commentsLoadMore => '加载中…';
+
+  @override
+  String get commentsNoMore => '没有更多评论了';
+
+  @override
+  String commentReplies(Object count) {
+    return '查看 $count 条回复';
+  }
+
+  @override
+  String get commentHideReplies => '收起回复';
+
+  @override
   String get jumpToHint => '跳转至';
 
   @override
