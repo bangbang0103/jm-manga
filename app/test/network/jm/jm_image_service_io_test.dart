@@ -9,7 +9,18 @@ import 'package:jm_manga/network/jm/jm_domain.dart';
 import 'package:jm_manga/network/jm/jm_image_service_io.dart';
 import 'package:jm_manga/network/jm/jm_client.dart';
 import 'package:jm_manga/network/jm/jm_constants.dart';
+import 'package:jm_manga/utils/image_cache_lru_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _CountingLruStore extends ImageCacheLruStore {
+  int readAllCalls = 0;
+
+  @override
+  Future<Map<String, int>> readAll() async {
+    readAllCalls += 1;
+    return super.readAll();
+  }
+}
 
 class _MemoryImageCache extends JmImageCache {
   final _store = <String, Uint8List>{};
@@ -120,6 +131,69 @@ void main() {
 
       expect(legacyCached, equals(bytes));
       expect(canonicalCached, equals(bytes));
+    });
+  });
+
+  group('JmImageCache eviction throttling', () {
+    String photoUrl(int index) =>
+        'https://cdn.test/media/photos/${1000 + index}/00001.webp';
+
+    test(
+      'skips full scans for consecutive writes below the threshold',
+      () async {
+        final store = _CountingLruStore();
+        final cache = JmImageCache(lru: store);
+        final bytes = Uint8List.fromList([1]);
+
+        for (var i = 0; i < 20; i++) {
+          await cache.write(photoUrl(i), bytes);
+        }
+
+        // 只有首次写入触发完整清理，其余 19 次被节流跳过。
+        expect(store.readAllCalls, 1);
+        await store.dispose();
+      },
+    );
+
+    test('runs eviction again once the write threshold is reached', () async {
+      final store = _CountingLruStore();
+      final cache = JmImageCache(lru: store);
+      final bytes = Uint8List.fromList([1]);
+
+      for (var i = 0; i < 21; i++) {
+        await cache.write(photoUrl(i), bytes);
+      }
+
+      // 首次写入一次 + 第 21 次写入达到阈值后再触发一次。
+      expect(store.readAllCalls, 2);
+      await store.dispose();
+    });
+
+    test('tracks cover and image eviction independently', () async {
+      final store = _CountingLruStore();
+      final cache = JmImageCache(lru: store);
+      final bytes = Uint8List.fromList([1]);
+
+      await cache.write(photoUrl(0), bytes);
+      expect(store.readAllCalls, 1);
+
+      // cover 类型的首次写入不受 image 计数影响，会各自清理一次。
+      await cache.write('https://cdn.test/media/albums/100.jpg', bytes);
+      expect(store.readAllCalls, 2);
+      await store.dispose();
+    });
+
+    test('evictIfNeeded forces a scan regardless of throttling', () async {
+      final store = _CountingLruStore();
+      final cache = JmImageCache(lru: store);
+
+      await cache.write(photoUrl(0), Uint8List.fromList([1]));
+      final scansAfterWrite = store.readAllCalls;
+
+      await cache.evictIfNeeded();
+
+      expect(store.readAllCalls, greaterThan(scansAfterWrite));
+      await store.dispose();
     });
   });
 
@@ -491,6 +565,62 @@ void main() {
         expect(client.scrambleCalls, 1);
       },
     );
+  });
+
+  group('JmImageService.close', () {
+    test('forClient 创建的内部 Dio 被关闭，且 close 幂等', () {
+      final client = JmClient(
+        domains: const JmDomainConfig(
+          apiDomains: ['api.test'],
+          imageDomains: ['cdn.test'],
+        ),
+        autoUpdateDomains: false,
+      );
+      addTearDown(client.close);
+
+      final service = JmImageService.forClient(client);
+      expect(service.isClosed, isFalse);
+
+      service.close();
+      expect(service.isClosed, isTrue);
+      expect(
+        () => service.dio.getUri<List<int>>(
+          Uri.parse('https://cdn.test/media/albums/300.jpg'),
+        ),
+        throwsA(isA<DioException>()),
+      );
+
+      // 重复 close 不抛异常，状态保持关闭。
+      service.close();
+      expect(service.isClosed, isTrue);
+    });
+
+    test('外部注入的 dio 不被 close 关闭', () async {
+      final dio = Dio();
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.resolve(
+              Response<dynamic>(
+                requestOptions: options,
+                data: <int>[1],
+                statusCode: 200,
+              ),
+            );
+          },
+        ),
+      );
+
+      final service = JmImageService(dio: dio, cache: _MemoryImageCache());
+      service.close();
+      expect(service.isClosed, isTrue);
+
+      // 注入的 dio 由调用方持有，close 后仍可正常加载。
+      final bytes = await service.loadDecodedBytes(
+        'https://cdn.test/media/albums/301.jpg',
+      );
+      expect(bytes, equals(Uint8List.fromList([1])));
+    });
   });
 }
 

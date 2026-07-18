@@ -36,6 +36,7 @@ class JmClient {
   int _apiDomainIndex = 0;
   int _imageDomainIndex = 0;
   bool _domainsUpdated = false;
+  bool _closed = false;
   Future<void>? _domainUpdateFuture;
   final _scrambleIdFutures = <String, Future<int>>{};
   final List<Uri> _customApiUris;
@@ -262,6 +263,21 @@ class JmClient {
 
   void clearCookies() {
     _cookies.clear();
+  }
+
+  /// 内部 Dio 是否已通过 [close] 关闭。
+  @visibleForTesting
+  bool get isClosed => _closed;
+
+  /// 关闭内部 Dio，释放连接池中的空闲连接。
+  ///
+  /// 配置变更导致 repository 重建时由 provider 的 dispose 钩子调用，
+  /// 避免旧实例的连接长期累积。关闭后该实例不应再发起请求。
+  void close() {
+    if (_closed) return;
+    _closed = true;
+    // force: false，让在途请求正常完成，仅拒绝新请求。
+    dio.close();
   }
 
   Uri uriFor(String path, {Map<String, Object?> queryParameters = const {}}) {
@@ -678,14 +694,41 @@ class _JmLoggingInterceptor extends Interceptor {
 
   String _formatResponseBody(dynamic data) {
     if (data == null) return '<empty>';
+    // 非 final：try 中赋值失败后 catch 需要再次赋值。
+    String raw;
     if (data is Map || data is List) {
       try {
-        return const JsonEncoder.withIndent('  ').convert(data);
+        raw = const JsonEncoder.withIndent('  ').convert(data);
       } catch (_) {
-        return data.toString();
+        raw = data.toString();
       }
+    } else {
+      raw = data.toString();
     }
-    return data.toString();
+    // 日志会落盘且可导出分享：先脱敏再截断，避免泄露凭据或刷爆日志文件。
+    return _truncateForLog(_redactSensitiveFields(raw));
+  }
+
+  /// 响应体日志的最大长度，超出部分截断。
+  static const _maxBodyLogLength = 500;
+
+  /// 匹配 JSON 键值对或 Header/Cookie 形式出现的敏感字段，值统一打码。
+  static final _sensitiveFieldPattern = RegExp(
+    '(("?)(?:password|passwd|cookie|set-cookie|authorization|token|session|uid|avs)\\2\\s*[:=]\\s*"?)(?:Bearer\\s+)?([^"&,\\s}]+)',
+    caseSensitive: false,
+  );
+
+  static String _redactSensitiveFields(String text) {
+    return text.replaceAllMapped(
+      _sensitiveFieldPattern,
+      (match) => '${match[1]}***',
+    );
+  }
+
+  static String _truncateForLog(String body) {
+    if (body.length <= _maxBodyLogLength) return body;
+    return '${body.substring(0, _maxBodyLogLength)}'
+        '...<truncated, ${body.length} chars total>';
   }
 
   int _elapsedMs(RequestOptions options) {

@@ -93,9 +93,6 @@ class FakeApiRepository implements MangaRepository {
   String coverUrl(String albumId, {String size = ''}) => '';
 
   @override
-  Map<String, String> get imageHeaders => {};
-
-  @override
   ImageProvider imageProvider(String url) => NetworkImage(url);
 
   @override
@@ -121,16 +118,6 @@ class FakeApiRepository implements MangaRepository {
 
   @override
   Future<void> syncProgress(ReadingProgress progress) async {}
-
-  @override
-  Future<Map<String, dynamic>> checkHealth() async => {
-    'status': 'ok',
-    'version': '0.1.0-test',
-    'uptime_seconds': 0,
-  };
-
-  @override
-  Future<Map<String, dynamic>> validateConnection() async => checkHealth();
 
   @override
   Future<Map<String, dynamic>> loginToJm(

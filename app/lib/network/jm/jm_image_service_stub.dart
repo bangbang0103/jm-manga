@@ -46,6 +46,10 @@ class JmImageService {
   }
 
   void clearBackoff() {}
+
+  bool get isClosed => false;
+
+  void close() {}
 }
 
 class JmImageMetadata {

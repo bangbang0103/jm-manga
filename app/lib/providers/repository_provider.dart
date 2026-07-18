@@ -37,16 +37,24 @@ final apiRepositoryProvider = Provider<MangaRepository>((ref) {
   final customApiDomains = ref.watch(customApiDomainsProvider);
   final customImageDomains = ref.watch(customImageDomainsProvider);
 
-  return DirectMangaRepository(
-    client: JmClient(
-      proxyUrl: proxyUrl,
-      autoUpdateDomains: autoUpdateDomains,
-      customApiDomains: customApiDomains,
-      customImageDomains: customImageDomains,
-    ),
+  final client = JmClient(
+    proxyUrl: proxyUrl,
+    autoUpdateDomains: autoUpdateDomains,
+    customApiDomains: customApiDomains,
+    customImageDomains: customImageDomains,
+  );
+  // 配置变更会重建本 provider；关闭旧 client 的 Dio，避免连接池累积。
+  ref.onDispose(client.close);
+
+  final repository = DirectMangaRepository(
+    client: client,
     proxyUrl: proxyUrl,
     ownerKey: ownerKey,
     username: account?.isAnonymous == false ? account?.username : null,
     password: account?.isAnonymous == false ? account?.password : null,
   );
+  // 图片服务持有独立的 image Dio，同样需要在重建时关闭。
+  ref.onDispose(repository.imageService.close);
+
+  return repository;
 });

@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:jm_manga/network/jm/jm_client.dart';
 import 'package:jm_manga/network/jm/jm_constants.dart';
 import 'package:jm_manga/network/jm/jm_domain.dart';
+import 'package:jm_manga/utils/app_logger.dart';
 import 'package:test/test.dart';
 
 const _setCookieHeader = 'set-cookie';
@@ -198,6 +199,78 @@ void main() {
         expect(adapter.requests.last.uri.host, 'fallback.test');
       },
     );
+
+    test('close shuts down the underlying dio and is idempotent', () async {
+      final adapter = _ClosableAdapter();
+      final client = JmClient(
+        dio: Dio()..httpClientAdapter = adapter,
+        domains: const JmDomainConfig(apiDomains: ['api.example.test']),
+        autoUpdateDomains: false,
+      );
+
+      expect(client.isClosed, isFalse);
+      client.close();
+
+      expect(client.isClosed, isTrue);
+      expect(adapter.closeCalls, 1);
+
+      client.close();
+      expect(adapter.closeCalls, 1);
+
+      await expectLater(
+        client.getFavoritePage(),
+        throwsA(isA<DioException>()),
+      );
+    });
+
+    test('debug response logs redact sensitive fields', () async {
+      globalLogger.clear();
+      final adapter = _RawBodyAdapter(
+        '{"code": 401, "password": "sup3r-secret", "uid": 99887766, '
+        '"session": "avs-session-value", "errorMsg": "login failed"}',
+      );
+      final client = JmClient(
+        dio: Dio()..httpClientAdapter = adapter,
+        domains: const JmDomainConfig(apiDomains: ['api.example.test']),
+        timestampProvider: () => 1700566805,
+        autoUpdateDomains: false,
+      );
+
+      await expectLater(
+        client.getFavoritePage(),
+        throwsA(isA<JmApiException>()),
+      );
+
+      final allMessages = globalLogger.entries.map((e) => e.message).join('\n');
+      expect(allMessages, isNot(contains('sup3r-secret')));
+      expect(allMessages, isNot(contains('99887766')));
+      expect(allMessages, isNot(contains('avs-session-value')));
+      expect(allMessages, contains('***'));
+    });
+
+    test('debug response logs truncate long bodies', () async {
+      globalLogger.clear();
+      final adapter = _RawBodyAdapter(
+        '{"code": 401, "errorMsg": "bad", "junk": "${'x' * 2000}"}',
+      );
+      final client = JmClient(
+        dio: Dio()..httpClientAdapter = adapter,
+        domains: const JmDomainConfig(apiDomains: ['api.example.test']),
+        timestampProvider: () => 1700566805,
+        autoUpdateDomains: false,
+      );
+
+      await expectLater(
+        client.getFavoritePage(),
+        throwsA(isA<JmApiException>()),
+      );
+
+      final bodyEntry = globalLogger.entries.firstWhere(
+        (e) => e.message.contains('BODY:'),
+      );
+      expect(bodyEntry.message, contains('truncated'));
+      expect(bodyEntry.message.length, lessThan(700));
+    });
   });
 }
 
@@ -325,4 +398,48 @@ class _SequentialScramblePageAdapter implements HttpClientAdapter {
 
   @override
   void close({bool force = false}) {}
+}
+
+/// 返回原始 JSON 文本的 adapter，用于验证响应体日志的脱敏与截断。
+class _RawBodyAdapter implements HttpClientAdapter {
+  final String body;
+
+  _RawBodyAdapter(this.body);
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    return ResponseBody.fromString(
+      body,
+      200,
+      headers: const {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// 记录 close 调用次数的 adapter，用于验证 JmClient.close 释放 Dio。
+class _ClosableAdapter implements HttpClientAdapter {
+  int closeCalls = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    return ResponseBody.fromString('', 200);
+  }
+
+  @override
+  void close({bool force = false}) {
+    closeCalls += 1;
+  }
 }

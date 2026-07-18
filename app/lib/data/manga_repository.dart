@@ -29,8 +29,6 @@ abstract interface class MangaRepository {
 
   String coverUrl(String albumId, {String size = ''});
 
-  Map<String, String> get imageHeaders;
-
   ImageProvider imageProvider(String url);
 
   Future<Uint8List> downloadImage(String url);
@@ -58,10 +56,6 @@ abstract interface class MangaRepository {
   Future<void> syncProgress(ReadingProgress progress);
 
   Future<void> deleteRecentProgress(List<String> albumIds);
-
-  Future<Map<String, dynamic>> checkHealth();
-
-  Future<Map<String, dynamic>> validateConnection();
 
   Future<Map<String, dynamic>> loginToJm(String username, String password);
 

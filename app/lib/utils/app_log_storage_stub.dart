@@ -3,6 +3,8 @@ class AppLogStorage {
 
   void append(String content) {}
 
+  Future<void> flush() async {}
+
   void clear() {}
 
   Future<String> export(String content) {

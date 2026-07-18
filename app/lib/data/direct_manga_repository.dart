@@ -150,9 +150,6 @@ class DirectMangaRepository implements MangaRepository {
   }
 
   @override
-  Map<String, String> get imageHeaders => const {};
-
-  @override
   ImageProvider imageProvider(String url) {
     return JmDecodedImageProvider(url: url, service: imageService);
   }
@@ -334,12 +331,6 @@ class DirectMangaRepository implements MangaRepository {
   Future<void> deleteRecentProgress(List<String> albumIds) async {
     await localStore.deleteRecentProgress(ownerKey, albumIds);
   }
-
-  @override
-  Future<Map<String, dynamic>> checkHealth() async => {'status': 'ok'};
-
-  @override
-  Future<Map<String, dynamic>> validateConnection() => checkHealth();
 
   @override
   Future<Map<String, dynamic>> loginToJm(
