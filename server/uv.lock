@@ -575,7 +575,7 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.9.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
-    { name = "jmcomic", specifier = ">=2.7.0" },
+    { name = "jmcomic", specifier = ">=2.7.2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
     { name = "python-multipart", specifier = ">=0.0.20" },
@@ -593,7 +593,7 @@ dev = [
 
 [[package]]
 name = "jmcomic"
-version = "2.7.0"
+version = "2.7.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "commonx" },
@@ -602,9 +602,9 @@ dependencies = [
     { name = "pycryptodome" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ef/e4/626785905ae7810006923657f28152948dbd388d14b46d13fb76905a68c4/jmcomic-2.7.0.tar.gz", hash = "sha256:13c29227c18621e27f3298026078a4d4ac67d988f09bebb4a606eca71cc22d5e", size = 93260, upload-time = "2026-06-14T16:40:41.383Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/fc/48554325489e5e39e4f0e9aef89aa591335c02a8f0210b8c1cc16c67f503/jmcomic-2.7.2.tar.gz", hash = "sha256:34b65459eaf80689984015e3520a3d93beb8932af2a6799b0e2f79bf5b43108e", size = 94822, upload-time = "2026-07-16T14:48:26.701Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bc/d3/21105e040b5d5f5c52a502bc77b016b36326e8746d1db565dd534200fc0b/jmcomic-2.7.0-py3-none-any.whl", hash = "sha256:72cf64c100b1e97c122864ee7ac24d940aae9bd88ffd38d475e54cf6122ee90a", size = 97075, upload-time = "2026-06-14T16:40:39.819Z" },
+    { url = "https://files.pythonhosted.org/packages/06/1b/30f9632e3c59d814d9ea392fe79f1f1eb6294229a2c4badee24eb96f5806/jmcomic-2.7.2-py3-none-any.whl", hash = "sha256:e1114dea54ddbf3b0bee56700c3cb5d58fbfe6159197ad8becff0b19e68ec600", size = 98387, upload-time = "2026-07-16T14:48:25.064Z" },
 ]
 
 [[package]]

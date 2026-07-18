@@ -4,7 +4,7 @@ class JmConstants {
   static const appTokenSecret = '185Hcomic3PAPP7R';
   static const appTokenSecretForContent = '18comicAPPContent';
   static const appDataSecret = '185Hcomic3PAPP7R';
-  static const appVersion = '2.0.26';
+  static const appVersion = '2.0.28';
 
   static const scramble220980 = 220980;
   static const scramble268850 = 268850;
