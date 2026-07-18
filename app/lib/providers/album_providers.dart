@@ -8,6 +8,7 @@ import '../models/album.dart';
 import '../models/comment.dart';
 import '../models/reading_progress.dart';
 import '../utils/tag_query_parser.dart';
+import 'paged_list_notifier.dart';
 import 'repository_provider.dart';
 
 final searchProvider =
@@ -20,64 +21,23 @@ final searchProvider =
       return SearchNotifier(repo, request);
     });
 
-class SearchNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
+class SearchNotifier extends ListPagedNotifier<AlbumItem> {
   final MangaRepository repo;
   final SearchRequest request;
-  int _page = 1;
-  bool _loadingMore = false;
-  bool _hasMore = true;
 
-  bool get hasMore => _hasMore;
-  bool get isLoadingMore => _loadingMore;
-
-  SearchNotifier(this.repo, this.request) : super(const AsyncValue.loading()) {
+  SearchNotifier(this.repo, this.request) {
     if (request.hasSearchTerms) {
       search();
     } else {
-      _hasMore = false;
-      state = const AsyncValue.data([]);
+      completeWithoutResults(const []);
     }
   }
 
-  Future<void> search() async {
-    _page = 1;
-    _hasMore = true;
-    state = const AsyncValue.loading();
-    await _fetch(page: _page);
-  }
+  Future<void> search() => load();
 
-  Future<void> loadMore() async {
-    if (_loadingMore || !_hasMore) return;
-    _loadingMore = true;
-    try {
-      await _fetch(page: _page + 1, append: true);
-    } finally {
-      _loadingMore = false;
-    }
-  }
-
-  Future<void> _fetch({required int page, bool append = false}) async {
-    try {
-      final results = await repo.search(request.effectiveQuery, page: page);
-      if (results.isEmpty) {
-        _hasMore = false;
-      } else {
-        _page = page;
-        _hasMore = results.length >= 20;
-      }
-
-      if (mounted) {
-        if (append) {
-          final current = state.valueOrNull ?? [];
-          state = AsyncValue.data([...current, ...results]);
-        } else {
-          state = AsyncValue.data(results);
-        }
-      }
-    } catch (e, st) {
-      if (mounted) state = AsyncValue.error(e, st);
-    }
-  }
+  @override
+  Future<List<AlbumItem>> fetchPage(int page) =>
+      repo.search(request.effectiveQuery, page: page);
 }
 
 class RankingsKey {
@@ -104,61 +64,17 @@ final rankingsProvider =
       return RankingsNotifier(repo, key);
     });
 
-class RankingsNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
+class RankingsNotifier extends ListPagedNotifier<AlbumItem> {
   final MangaRepository repo;
   final RankingsKey key;
-  int _page = 1;
-  bool _loadingMore = false;
-  bool _hasMore = true;
 
-  bool get hasMore => _hasMore;
-  bool get isLoadingMore => _loadingMore;
-
-  RankingsNotifier(this.repo, this.key) : super(const AsyncValue.loading()) {
+  RankingsNotifier(this.repo, this.key) {
     load();
   }
 
-  Future<void> load() async {
-    _page = 1;
-    _hasMore = true;
-    state = const AsyncValue.loading();
-    await _fetch(page: _page);
-  }
-
-  Future<void> refresh() => load();
-
-  Future<void> loadMore() async {
-    if (_loadingMore || !_hasMore) return;
-    _loadingMore = true;
-    await _fetch(page: _page + 1, append: true);
-    _loadingMore = false;
-  }
-
-  Future<void> _fetch({required int page, bool append = false}) async {
-    try {
-      final results = await repo.getRankings(
-        key.type,
-        category: key.category,
-        page: page,
-      );
-      if (results.isEmpty) {
-        _hasMore = false;
-      } else {
-        _page = page;
-        _hasMore = results.length >= 20;
-      }
-      if (mounted) {
-        if (append) {
-          final current = state.valueOrNull ?? [];
-          state = AsyncValue.data([...current, ...results]);
-        } else {
-          state = AsyncValue.data(results);
-        }
-      }
-    } catch (e, st) {
-      if (mounted) state = AsyncValue.error(e, st);
-    }
-  }
+  @override
+  Future<List<AlbumItem>> fetchPage(int page) =>
+      repo.getRankings(key.type, category: key.category, page: page);
 }
 
 class CategoryKey {
@@ -189,61 +105,20 @@ final categoryProvider =
       return CategoryNotifier(repo, key);
     });
 
-class CategoryNotifier extends StateNotifier<AsyncValue<List<AlbumItem>>> {
+class CategoryNotifier extends ListPagedNotifier<AlbumItem> {
   final MangaRepository repo;
   final CategoryKey key;
-  int _page = 1;
-  bool _loadingMore = false;
-  bool _hasMore = true;
 
-  bool get hasMore => _hasMore;
-  bool get isLoadingMore => _loadingMore;
-
-  CategoryNotifier(this.repo, this.key) : super(const AsyncValue.loading()) {
+  CategoryNotifier(this.repo, this.key) {
     load();
   }
 
-  Future<void> load() async {
-    _page = 1;
-    _hasMore = true;
-    state = const AsyncValue.loading();
-    await _fetch(page: _page);
-  }
-
-  Future<void> refresh() => load();
-
-  Future<void> loadMore() async {
-    if (_loadingMore || !_hasMore) return;
-    _loadingMore = true;
-    await _fetch(page: _page + 1, append: true);
-    _loadingMore = false;
-  }
-
-  Future<void> _fetch({required int page, bool append = false}) async {
-    try {
-      final results = await repo.getCategories(
-        category: key.category,
-        orderBy: key.orderBy,
-        page: page,
-      );
-      if (results.isEmpty) {
-        _hasMore = false;
-      } else {
-        _page = page;
-        _hasMore = results.length >= 20;
-      }
-      if (mounted) {
-        if (append) {
-          final current = state.valueOrNull ?? [];
-          state = AsyncValue.data([...current, ...results]);
-        } else {
-          state = AsyncValue.data(results);
-        }
-      }
-    } catch (e, st) {
-      if (mounted) state = AsyncValue.error(e, st);
-    }
-  }
+  @override
+  Future<List<AlbumItem>> fetchPage(int page) => repo.getCategories(
+    category: key.category,
+    orderBy: key.orderBy,
+    page: page,
+  );
 }
 
 final albumDetailProvider = FutureProvider.family<AlbumDetail, String>((
@@ -468,79 +343,43 @@ final albumProgressProvider =
       return repo.getAlbumProgress(albumId);
     });
 
-final albumCommentsProvider = StateNotifierProvider.family<
-  AlbumCommentsNotifier,
-  AsyncValue<CommentPage>,
-  String
->((ref, albumId) {
-  final repo = ref.watch(apiRepositoryProvider);
-  return AlbumCommentsNotifier(repo, albumId);
-});
+final albumCommentsProvider =
+    StateNotifierProvider.family<
+      AlbumCommentsNotifier,
+      AsyncValue<CommentPage>,
+      String
+    >((ref, albumId) {
+      final repo = ref.watch(apiRepositoryProvider);
+      return AlbumCommentsNotifier(repo, albumId);
+    });
 
-class AlbumCommentsNotifier extends StateNotifier<AsyncValue<CommentPage>> {
+class AlbumCommentsNotifier extends PagedListNotifier<CommentPage> {
+  /// 评论接口每页 10 条，用于判断 hasMore。
+  static const _pageSize = 10;
+
   final MangaRepository repo;
   final String albumId;
-  int _page = 1;
-  bool _hasMore = true;
-  bool _loadingMore = false;
 
-  bool get hasMore => _hasMore;
-  bool get isLoadingMore => _loadingMore;
-
-  AlbumCommentsNotifier(this.repo, this.albumId)
-    : super(const AsyncValue.loading()) {
+  AlbumCommentsNotifier(this.repo, this.albumId) {
     load();
   }
 
-  Future<void> load() async {
-    _page = 1;
-    _hasMore = true;
-    state = const AsyncValue.loading();
-    await _fetch(page: _page);
-  }
+  @override
+  int get pageSize => _pageSize;
 
-  Future<void> refresh() => load();
+  @override
+  Future<CommentPage> fetchPage(int page) =>
+      repo.getComments(albumId, page: page);
 
-  Future<void> loadMore() async {
-    if (_loadingMore || !_hasMore) return;
-    _loadingMore = true;
-    try {
-      await _fetch(page: _page + 1, append: true);
-    } finally {
-      _loadingMore = false;
-    }
-  }
+  @override
+  List<Comment> itemsOf(CommentPage pageData) => pageData.items;
 
-  Future<void> _fetch({required int page, bool append = false}) async {
-    try {
-      final results = await repo.getComments(albumId, page: page);
-      if (results.items.isEmpty) {
-        _hasMore = false;
-      } else {
-        _page = page;
-        _hasMore = results.items.length >= 10;
-      }
-
-      if (mounted) {
-        if (append) {
-          final current = state.valueOrNull;
-          if (current != null) {
-            state = AsyncValue.data(
-              CommentPage(
-                total: results.total,
-                items: [...current.items, ...results.items],
-              ),
-            );
-          } else {
-            state = AsyncValue.data(results);
-          }
-        } else {
-          state = AsyncValue.data(results);
-        }
-      }
-    } catch (e, st) {
-      if (mounted) state = AsyncValue.error(e, st);
-    }
+  @override
+  CommentPage merge(CommentPage? current, CommentPage next) {
+    if (current == null) return next;
+    return CommentPage(
+      total: next.total,
+      items: [...current.items, ...next.items],
+    );
   }
 }
-

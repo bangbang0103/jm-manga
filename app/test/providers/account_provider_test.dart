@@ -60,7 +60,10 @@ void main() {
       expect(stored.first.containsKey('password'), isFalse);
 
       const storage = FlutterSecureStorage();
-      expect(await storage.read(key: 'jm_account_password_${account.id}'), 'pwd');
+      expect(
+        await storage.read(key: 'jm_account_password_${account.id}'),
+        'pwd',
+      );
     });
 
     test('throws when adding duplicate username', () async {
@@ -68,9 +71,7 @@ void main() {
       addTearDown(notifier.dispose);
       await Future.delayed(Duration.zero);
 
-      await notifier.addAccount(
-        JmAccount(username: 'alice', password: 'a'),
-      );
+      await notifier.addAccount(JmAccount(username: 'alice', password: 'a'));
 
       expect(
         notifier.addAccount(JmAccount(username: 'alice', password: 'b')),
@@ -100,6 +101,54 @@ void main() {
       expect(await storage.read(key: 'jm_account_password_id1'), isNull);
       expect(await storage.read(key: 'jm_session_cookies_alice'), isNull);
     });
+
+    test('removeAccount with unknown id is a no-op', () async {
+      SharedPreferences.setMockInitialValues({
+        'jm_accounts': jsonEncode([
+          {'id': 'id1', 'username': 'alice', 'isAnonymous': false},
+        ]),
+      });
+
+      final notifier = AccountNotifier();
+      addTearDown(notifier.dispose);
+      await Future.delayed(Duration.zero);
+
+      await notifier.removeAccount('missing');
+
+      expect(notifier.state.length, 1);
+      expect(notifier.state.first.id, 'id1');
+    });
+
+    test('skips corrupted entries but keeps valid accounts', () async {
+      FlutterSecureStorage.setMockInitialValues({
+        'jm_account_password_id1': 'secret',
+      });
+      SharedPreferences.setMockInitialValues({
+        'jm_accounts': jsonEncode([
+          {'id': 'id1', 'username': 'alice', 'isAnonymous': false},
+          'not-a-map',
+          {'id': 123, 'username': 'bad'},
+        ]),
+      });
+
+      final notifier = AccountNotifier();
+      addTearDown(notifier.dispose);
+      await Future.delayed(Duration.zero);
+
+      expect(notifier.state.length, 1);
+      expect(notifier.state.first.username, 'alice');
+      expect(notifier.state.first.password, 'secret');
+    });
+
+    test('clears state when persisted json is fully corrupted', () async {
+      SharedPreferences.setMockInitialValues({'jm_accounts': '{broken json'});
+
+      final notifier = AccountNotifier();
+      addTearDown(notifier.dispose);
+      await Future.delayed(Duration.zero);
+
+      expect(notifier.state, isEmpty);
+    });
   });
 
   group('CurrentAccountIdNotifier', () {
@@ -127,9 +176,7 @@ void main() {
     });
 
     test('select null removes persisted id', () async {
-      SharedPreferences.setMockInitialValues({
-        'current_jm_account_id': 'id1',
-      });
+      SharedPreferences.setMockInitialValues({'current_jm_account_id': 'id1'});
       final notifier = CurrentAccountIdNotifier();
       addTearDown(notifier.dispose);
 

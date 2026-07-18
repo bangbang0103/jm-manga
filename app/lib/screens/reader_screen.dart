@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:jm_manga/l10n/app_localizations.dart';
@@ -8,8 +7,6 @@ import 'package:go_router/go_router.dart';
 
 import '../data/manga_repository.dart';
 import '../data/direct_manga_repository.dart';
-import '../core/theme/app_shadows.dart';
-import '../widgets/animated_favorite_button.dart';
 import '../widgets/error_placeholder.dart';
 import '../widgets/loading_indicator.dart';
 import '../models/album.dart';
@@ -19,8 +16,10 @@ import '../providers/album_providers.dart';
 import '../providers/config_provider.dart';
 import '../providers/repository_provider.dart';
 import '../utils/error_mapper.dart';
-import '../utils/favorite_action.dart';
 import '../utils/image_download.dart';
+import '../utils/reader_progress.dart';
+import 'reader/reader_page_image.dart';
+import 'reader/reader_toolbar.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
   final String photoId;
@@ -55,7 +54,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   List<double> _estimatedItemExtents = const [];
   final Map<String, double> _imageAspectRatios = {};
   final Map<String, int> _imageRetryCounts = {};
-  final Map<int, _ReaderPageVisibility> _visiblePages = {};
+  final Map<int, ReaderPageVisibility> _visiblePages = {};
 
   @override
   void initState() {
@@ -115,8 +114,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   }
 
   void _scheduleResume(String photoId, int imageIndex, int pageCount) {
-    if (_resumeAppliedForPhotoId == photoId || pageCount <= 0) return;
-    final target = imageIndex.clamp(0, pageCount - 1).toInt();
+    if (_resumeAppliedForPhotoId == photoId) return;
+    final target = resumeTargetIndex(imageIndex, pageCount);
+    if (target == null) return;
     _resumeAppliedForPhotoId = photoId;
     _resumeAttempts = 0;
     _currentIndex = target;
@@ -124,7 +124,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   }
 
   void _resumeToIndex(int index) {
-    if (!mounted || index <= 0 || index >= _imageKeys.length) return;
+    if (!mounted || !isResumableIndex(index, _imageKeys.length)) return;
 
     final keyContext = _imageKeys[index].currentContext;
     if (keyContext != null) {
@@ -138,9 +138,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
 
     // 目标 item 还没被 ListView 构建出来（通常因为图片未加载）。
     // 先按已知图片比例估算偏移量，等下一帧再尝试 ensureVisible。
-    if (_scrollController.hasClients && _resumeAttempts < 20) {
+    if (_scrollController.hasClients && canAttemptResumeJump(_resumeAttempts)) {
       _resumeAttempts += 1;
-      final targetOffset = _estimatedOffsetForIndex(index);
+      final targetOffset = estimatedOffsetForIndex(
+        index,
+        itemExtents: _estimatedItemExtents,
+        fallbackExtent: _fallbackItemExtent,
+      );
       final maxOffset = _scrollController.position.maxScrollExtent;
       _scrollController.jumpTo(targetOffset.clamp(0.0, maxOffset).toDouble());
       WidgetsBinding.instance.addPostFrameCallback(
@@ -182,7 +186,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
 
   void _scheduleSync() {
     _syncTimer?.cancel();
-    _syncTimer = Timer(const Duration(seconds: 1), _syncCurrentProgress);
+    _syncTimer = Timer(readerProgressSyncDebounce, _syncCurrentProgress);
   }
 
   void _preloadImages(
@@ -196,13 +200,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     }
     _lastPreloadedIndex = _currentIndex;
     _lastPreloadedTargetWidth = targetImageWidth;
-    if (urls.isEmpty) return;
     if (targetImageWidth <= 0) return;
-    final start = _currentIndex.clamp(0, urls.length - 1).toInt();
-    final end = preloadCount <= 0
-        ? start
-        : (_currentIndex + preloadCount).clamp(0, urls.length - 1).toInt();
-    for (int i = start; i <= end; i++) {
+    final range = preloadRange(
+      currentIndex: _currentIndex,
+      urlCount: urls.length,
+      preloadCount: preloadCount,
+    );
+    if (range == null) return;
+    for (int i = range.start; i <= range.end; i++) {
       final url = urls[i];
       unawaited(
         precacheImage(
@@ -214,12 +219,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   }
 
   void _setCurrentIndex(int index, {required int pageCount}) {
-    if (pageCount <= 0) return;
-    final safeIndex = index.clamp(0, pageCount - 1).toInt();
-    if (safeIndex == _currentIndex) return;
+    final safeIndex = clampedPageChange(
+      index,
+      currentIndex: _currentIndex,
+      pageCount: pageCount,
+    );
+    if (safeIndex == null) return;
     setState(() {
       _currentIndex = safeIndex;
-      if (_currentIndex >= pageCount - 1) {
+      if (isFinishedPage(_currentIndex, pageCount)) {
         _hasFinished = true;
       }
     });
@@ -237,79 +245,32 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   }
 
   void _handlePageVisibilityChanged(
-    _ReaderPageVisibility visibility, {
+    ReaderPageVisibility visibility, {
     required int pageCount,
   }) {
-    if (pageCount <= 0 ||
-        visibility.index < 0 ||
-        visibility.index >= pageCount) {
-      return;
-    }
-    if (visibility.visiblePixels <= 0) {
-      _visiblePages.remove(visibility.index);
-    } else {
-      _visiblePages[visibility.index] = visibility;
-    }
+    if (!isValidPageIndex(visibility.index, pageCount)) return;
+    updateVisiblePages(_visiblePages, visibility);
 
-    final index = _currentIndexFromVisibility(pageCount);
+    final index = currentIndexFromVisibility(
+      _visiblePages.values,
+      currentTick: _visibilityTick.value,
+      pageCount: pageCount,
+    );
     if (index != null) {
       _setCurrentIndex(index, pageCount: pageCount);
     }
   }
 
-  int? _currentIndexFromVisibility(int pageCount) {
-    final currentTick = _visibilityTick.value;
-    final visible = _visiblePages.values
-        .where(
-          (v) =>
-              v.tick == currentTick &&
-              v.index >= 0 &&
-              v.index < pageCount &&
-              v.visiblePixels > 0,
-        )
-        .toList();
-    if (visible.isEmpty) return null;
-
-    visible.sort((a, b) {
-      if (a.containsViewportCenter != b.containsViewportCenter) {
-        return a.containsViewportCenter ? -1 : 1;
-      }
-      if (a.containsViewportCenter && b.containsViewportCenter) {
-        final centerCompare = a.centerDistance.compareTo(b.centerDistance);
-        if (centerCompare != 0) return centerCompare;
-      } else {
-        final visibleCompare = b.visiblePixels.compareTo(a.visiblePixels);
-        if (visibleCompare != 0) return visibleCompare;
-        final centerCompare = a.centerDistance.compareTo(b.centerDistance);
-        if (centerCompare != 0) return centerCompare;
-      }
-      return a.index.compareTo(b.index);
-    });
-
-    return visible.first.index;
-  }
-
   void _updateEstimatedItemExtents(List<String> urls, double viewportWidth) {
-    if (viewportWidth <= 0) return;
-    _fallbackItemExtent = viewportWidth / _fallbackAspectRatio;
-    _estimatedItemExtents = [
-      for (final url in urls)
-        viewportWidth / (_imageAspectRatios[url] ?? _fallbackAspectRatio),
-    ];
-  }
-
-  double _estimatedOffsetForIndex(int index) {
-    if (index <= 0) return 0;
-    if (_estimatedItemExtents.isEmpty) {
-      return index * _fallbackItemExtent;
-    }
-
-    var offset = 0.0;
-    final safeIndex = index.clamp(0, _estimatedItemExtents.length).toInt();
-    for (var i = 0; i < safeIndex; i++) {
-      offset += _estimatedItemExtents[i];
-    }
-    return offset;
+    final estimate = estimateItemExtents(
+      urls: urls,
+      viewportWidth: viewportWidth,
+      fallbackAspectRatio: _fallbackAspectRatio,
+      imageAspectRatios: _imageAspectRatios,
+    );
+    if (estimate == null) return;
+    _fallbackItemExtent = estimate.fallbackExtent;
+    _estimatedItemExtents = estimate.itemExtents;
   }
 
   void _handleImageAspectRatio(String url, double aspectRatio) {
@@ -449,7 +410,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     required AlbumDetail album,
     required List<ReadingProgress> progressList,
   }) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final favoriteIdsAsync = ref.watch(favoriteAlbumIdsProvider);
     final mediaQuery = MediaQuery.of(context);
@@ -543,7 +503,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
                     fallbackName: '${widget.photoId}_$index.jpg',
                   ),
                   behavior: HitTestBehavior.translucent,
-                  child: _ReaderPageImage(
+                  child: ReaderPageImage(
                     key: ValueKey('reader_image_${url}_$retryCount'),
                     index: index,
                     imageProvider: imageProvider,
@@ -575,346 +535,23 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
           ValueListenableBuilder<bool>(
             valueListenable: _toolbarVisible,
             builder: (context, showToolbar, child) {
-              return Stack(
-                children: [
-                  if (showToolbar)
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: AppBar(
-                        backgroundColor: theme.colorScheme.surface.withValues(
-                          alpha: 0.9,
-                        ),
-                        elevation: 2,
-                        shadowColor: Colors.black.withValues(alpha: 0.08),
-                        surfaceTintColor: Colors.transparent,
-                        title: Text(photo.title),
-                      ),
-                    ),
-                  if (showToolbar)
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface.withValues(
-                            alpha: 0.9,
-                          ),
-                          boxShadow: AppShadows.bottomBar,
-                        ),
-                        padding: const EdgeInsets.all(16),
-                        child: SafeArea(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                l10n.pageCounter(
-                                  _currentIndex + 1,
-                                  photo.imageUrls.length,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (hasPrev)
-                                    IconButton(
-                                      icon: const Icon(Icons.skip_previous),
-                                      onPressed: () => _openChapter(
-                                        prevPhotoId,
-                                        initialData,
-                                      ),
-                                    )
-                                  else
-                                    const SizedBox(width: 48),
-                                  const SizedBox(width: 24),
-                                  if (_hasFinished)
-                                    Chip(
-                                      label: Text(l10n.finishedBadge),
-                                      backgroundColor: theme
-                                          .colorScheme
-                                          .surfaceContainerHigh,
-                                      side: BorderSide.none,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      labelStyle: theme.textTheme.labelLarge,
-                                    )
-                                  else
-                                    const SizedBox.shrink(),
-                                  const SizedBox(width: 24),
-                                  if (hasNext)
-                                    IconButton(
-                                      icon: const Icon(Icons.skip_next),
-                                      onPressed: () => _openChapter(
-                                        nextPhotoId,
-                                        initialData,
-                                      ),
-                                    )
-                                  else
-                                    const SizedBox(width: 48),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  Positioned(
-                    bottom: showToolbar ? 120 : 24,
-                    right: 16,
-                    child: FloatingActionButton.small(
-                      heroTag: 'reader_favorite',
-                      backgroundColor: theme.colorScheme.surfaceContainerHigh
-                          .withValues(alpha: 0.95),
-                      onPressed: () => toggleFavoriteAction(
-                        context,
-                        ref,
-                        albumId: album.albumId,
-                        item: AlbumItem(
-                          albumId: album.albumId,
-                          title: album.title,
-                          tags: const [],
-                          coverUrl: album.coverUrl,
-                        ),
-                      ),
-                      child: AnimatedFavoriteButton(
-                        isFavorite: isFavorite,
-                        onPressed: null,
-                        size: 24,
-                        padding: EdgeInsets.zero,
-                      ),
-                    ),
-                  ),
-                ],
+              return ReaderToolbar(
+                visible: showToolbar,
+                title: photo.title,
+                currentIndex: _currentIndex,
+                pageCount: photo.imageUrls.length,
+                hasFinished: _hasFinished,
+                hasPrevious: hasPrev,
+                hasNext: hasNext,
+                onPrevious: () => _openChapter(prevPhotoId, initialData),
+                onNext: () => _openChapter(nextPhotoId, initialData),
+                album: album,
+                isFavorite: isFavorite,
               );
             },
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ReaderPageImage extends StatefulWidget {
-  final int index;
-  final ImageProvider imageProvider;
-  final ScrollController scrollController;
-  final ValueNotifier<int> visibilityTick;
-  final double placeholderAspectRatio;
-  final String loadingMessage;
-  final String failedMessage;
-  final ValueChanged<_ReaderPageVisibility> onVisibilityChanged;
-  final ValueChanged<double> onAspectRatioChanged;
-  final VoidCallback onRetry;
-
-  const _ReaderPageImage({
-    super.key,
-    required this.index,
-    required this.imageProvider,
-    required this.scrollController,
-    required this.visibilityTick,
-    required this.placeholderAspectRatio,
-    required this.loadingMessage,
-    required this.failedMessage,
-    required this.onVisibilityChanged,
-    required this.onAspectRatioChanged,
-    required this.onRetry,
-  });
-
-  @override
-  State<_ReaderPageImage> createState() => _ReaderPageImageState();
-}
-
-class _ReaderPageImageState extends State<_ReaderPageImage> {
-  late final ImageStreamListener _listener;
-  ImageStream? _imageStream;
-  bool _visibilityReportScheduled = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _listener = ImageStreamListener(_handleImage, onError: (_, _) {});
-    widget.visibilityTick.addListener(_scheduleVisibilityReport);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _resolveImage();
-    _scheduleVisibilityReport();
-  }
-
-  @override
-  void didUpdateWidget(covariant _ReaderPageImage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.imageProvider != oldWidget.imageProvider) {
-      _resolveImage();
-    }
-    if (widget.visibilityTick != oldWidget.visibilityTick) {
-      oldWidget.visibilityTick.removeListener(_scheduleVisibilityReport);
-      widget.visibilityTick.addListener(_scheduleVisibilityReport);
-    }
-    if (widget.index != oldWidget.index ||
-        widget.scrollController != oldWidget.scrollController) {
-      _scheduleVisibilityReport();
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.visibilityTick.removeListener(_scheduleVisibilityReport);
-    _imageStream?.removeListener(_listener);
-    super.dispose();
-  }
-
-  void _resolveImage() {
-    _imageStream?.removeListener(_listener);
-    _imageStream = widget.imageProvider.resolve(
-      createLocalImageConfiguration(context),
-    )..addListener(_listener);
-  }
-
-  void _handleImage(ImageInfo imageInfo, bool synchronousCall) {
-    final width = imageInfo.image.width.toDouble();
-    final height = imageInfo.image.height.toDouble();
-    if (height <= 0) return;
-    final aspectRatio = width / height;
-    if (synchronousCall) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        widget.onAspectRatioChanged(aspectRatio);
-        _scheduleVisibilityReport();
-      });
-      return;
-    }
-    widget.onAspectRatioChanged(aspectRatio);
-    _scheduleVisibilityReport();
-  }
-
-  void _scheduleVisibilityReport() {
-    if (_visibilityReportScheduled) return;
-    _visibilityReportScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _visibilityReportScheduled = false;
-      if (!mounted) return;
-      _reportVisibility();
-    });
-  }
-
-  void _reportVisibility() {
-    final itemObject = context.findRenderObject();
-    if (itemObject is! RenderBox ||
-        !itemObject.attached ||
-        !itemObject.hasSize) {
-      widget.onVisibilityChanged(
-        _ReaderPageVisibility.hidden(
-          widget.index,
-          tick: widget.visibilityTick.value,
-        ),
-      );
-      return;
-    }
-
-    if (!widget.scrollController.hasClients) {
-      widget.onVisibilityChanged(
-        _ReaderPageVisibility.hidden(
-          widget.index,
-          tick: widget.visibilityTick.value,
-        ),
-      );
-      return;
-    }
-
-    final viewportObject = widget
-        .scrollController
-        .position
-        .context
-        .storageContext
-        .findRenderObject();
-    if (viewportObject is! RenderBox ||
-        !viewportObject.attached ||
-        !viewportObject.hasSize) {
-      widget.onVisibilityChanged(
-        _ReaderPageVisibility.hidden(
-          widget.index,
-          tick: widget.visibilityTick.value,
-        ),
-      );
-      return;
-    }
-
-    final itemTop = itemObject.localToGlobal(Offset.zero).dy;
-    final itemBottom = itemTop + itemObject.size.height;
-    final itemCenter = (itemTop + itemBottom) / 2;
-    final viewportTop = viewportObject.localToGlobal(Offset.zero).dy;
-    final viewportBottom = viewportTop + viewportObject.size.height;
-    final viewportCenter = (viewportTop + viewportBottom) / 2;
-    final visibleTop = math.max(itemTop, viewportTop);
-    final visibleBottom = math.min(itemBottom, viewportBottom);
-    final visiblePixels = math.max(0.0, visibleBottom - visibleTop);
-
-    widget.onVisibilityChanged(
-      _ReaderPageVisibility(
-        index: widget.index,
-        tick: widget.visibilityTick.value,
-        visiblePixels: visiblePixels,
-        centerDistance: (itemCenter - viewportCenter).abs(),
-        containsViewportCenter:
-            viewportCenter >= itemTop && viewportCenter <= itemBottom,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Image(
-      image: widget.imageProvider,
-      width: double.infinity,
-      fit: BoxFit.fitWidth,
-      gaplessPlayback: true,
-      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-        if (wasSynchronouslyLoaded || frame != null) return child;
-        return AspectRatio(
-          aspectRatio: widget.placeholderAspectRatio,
-          child: ImagePlaceholder(message: widget.loadingMessage),
-        );
-      },
-      errorBuilder: (_, _, _) => AspectRatio(
-        aspectRatio: widget.placeholderAspectRatio,
-        child: ImageErrorPlaceholder(
-          message: widget.failedMessage,
-          onRetry: widget.onRetry,
-        ),
-      ),
-    );
-  }
-}
-
-class _ReaderPageVisibility {
-  final int index;
-  final int tick;
-  final double visiblePixels;
-  final double centerDistance;
-  final bool containsViewportCenter;
-
-  const _ReaderPageVisibility({
-    required this.index,
-    required this.tick,
-    required this.visiblePixels,
-    required this.centerDistance,
-    required this.containsViewportCenter,
-  });
-
-  factory _ReaderPageVisibility.hidden(int index, {required int tick}) {
-    return _ReaderPageVisibility(
-      index: index,
-      tick: tick,
-      visiblePixels: 0,
-      centerDistance: double.infinity,
-      containsViewportCenter: false,
     );
   }
 }

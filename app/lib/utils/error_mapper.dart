@@ -34,6 +34,9 @@ String mapErrorToUserMessage(Object error, AppLocalizations l10n) {
   }
 
   if (error is JmApiException) {
+    if (error.isLoginRequired) {
+      return l10n.errorLoginExpired;
+    }
     return l10n.errorServerResponse;
   }
 

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/jm_account.dart';
 import '../utils/account_secret_store.dart';
+import '../utils/app_logger.dart';
 import '../utils/secure_storage.dart';
 
 final accountListProvider =
@@ -40,21 +41,33 @@ class AccountNotifier extends StateNotifier<List<JmAccount>> {
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString(_key);
-    if (json != null) {
+    if (json == null) return;
+
+    final List<dynamic> list;
+    try {
+      list = jsonDecode(json) as List<dynamic>;
+    } catch (e) {
+      // 整体 JSON 损坏，无法恢复任何条目，清空并记录日志。
+      globalLogger.w(
+        'Persisted account list is corrupted, clearing it',
+        error: e,
+      );
+      state = [];
+      return;
+    }
+
+    final accounts = <JmAccount>[];
+    for (final item in list) {
       try {
-        final list = jsonDecode(json) as List<dynamic>;
-        final accounts = <JmAccount>[];
-        for (final item in list) {
-          final account = JmAccount.fromJson(item as Map<String, dynamic>);
-          final password = await SecureStorage.read(_passwordKey(account.id));
-          accounts.add(account.copyWith(password: password));
-        }
-        state = accounts;
-        return;
-      } catch (_) {
-        state = [];
+        final account = JmAccount.fromJson(item as Map<String, dynamic>);
+        final password = await SecureStorage.read(_passwordKey(account.id));
+        accounts.add(account.copyWith(password: password));
+      } catch (e) {
+        // 单个条目损坏时跳过，保留其余账号。
+        globalLogger.w('Skipping corrupted account entry', error: e);
       }
     }
+    state = accounts;
   }
 
   Future<void> _save(List<JmAccount> accounts) async {
@@ -84,13 +97,14 @@ class AccountNotifier extends StateNotifier<List<JmAccount>> {
   }
 
   Future<void> removeAccount(String id) async {
-    final account = state.firstWhere((a) => a.id == id);
+    final matches = state.where((a) => a.id == id);
+    if (matches.isEmpty) return;
+    final account = matches.first;
     final updated = state.where((a) => a.id != id).toList();
     await AccountSecretStore.clearAccountSecrets(account);
     await _save(updated);
     state = updated;
   }
-
 }
 
 class CurrentAccountIdNotifier extends StateNotifier<String?> {

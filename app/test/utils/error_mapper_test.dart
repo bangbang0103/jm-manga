@@ -18,7 +18,10 @@ void main() {
         requestOptions: RequestOptions(path: '/'),
         type: DioExceptionType.connectionTimeout,
       );
-      expect(mapErrorToUserMessage(error, l10n), contains('Network unavailable'));
+      expect(
+        mapErrorToUserMessage(error, l10n),
+        contains('Network unavailable'),
+      );
     });
 
     test('maps 401 bad response to login expired', () {
@@ -53,7 +56,10 @@ void main() {
         requestOptions: RequestOptions(path: '/'),
         type: DioExceptionType.cancel,
       );
-      expect(mapErrorToUserMessage(error, l10n), contains('Something went wrong'));
+      expect(
+        mapErrorToUserMessage(error, l10n),
+        contains('Something went wrong'),
+      );
     });
 
     test('maps FormatException to local data corrupted', () {
@@ -72,6 +78,29 @@ void main() {
         contains('unexpected response'),
       );
     });
+
+    test('maps JmApiException with 401 code to login expired', () {
+      expect(
+        mapErrorToUserMessage(
+          const JmApiException(code: 401, message: 'unauthorized'),
+          l10n,
+        ),
+        contains('Session expired'),
+      );
+    });
+
+    test(
+      'maps JmApiException with login-required message to login expired',
+      () {
+        expect(
+          mapErrorToUserMessage(
+            const JmApiException(code: 200, message: '請先登入會員'),
+            l10n,
+          ),
+          contains('Session expired'),
+        );
+      },
+    );
 
     test('maps unknown error to generic error', () {
       expect(
