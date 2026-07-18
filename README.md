@@ -58,7 +58,7 @@ iOS 包为**未签名 IPA**，在非越狱设备上安装前需要先签名。
 安装到 iOS 模拟器：
 
 ```bash
-git clone https://github.com/bangbang0103/jm-manga
+git clone https://github.com/QPH-Coding/jm-manga
 cd app
 flutter pub get
 flutter build ios --simulator

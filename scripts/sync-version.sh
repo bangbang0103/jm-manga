@@ -18,17 +18,11 @@ fi
 pubspec="${ROOT_DIR}/app/pubspec.yaml"
 server_pyproject="${ROOT_DIR}/server/pyproject.toml"
 server_uv_lock="${ROOT_DIR}/server/uv.lock"
-current_pubspec_version="$(awk '/^version:/ {print $2; exit}' "${pubspec}")"
-build_number="1"
-if [[ "${current_pubspec_version}" == *+* ]]; then
-  build_number="${current_pubspec_version#*+}"
-fi
 
 export JM_MANGA_VERSION="${version}"
-export JM_MANGA_FLUTTER_VERSION="${version}+${build_number}"
 
 LC_ALL=C LC_CTYPE=C LANG=C perl -0pi -e \
-  's/^version: .+$/version: $ENV{JM_MANGA_FLUTTER_VERSION}/m' \
+  's/^version: .+$/version: $ENV{JM_MANGA_VERSION}/m' \
   "${pubspec}"
 
 if [[ -f "${server_pyproject}" ]]; then
@@ -44,5 +38,5 @@ if [[ -f "${server_uv_lock}" ]]; then
 fi
 
 echo "Synced version ${JM_MANGA_VERSION}"
-echo "Flutter version ${JM_MANGA_FLUTTER_VERSION}"
+echo "Flutter version ${JM_MANGA_VERSION}"
 echo "Server version ${JM_MANGA_VERSION}"

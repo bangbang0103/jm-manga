@@ -101,7 +101,7 @@ JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS
 
 - 当前仅支持 iOS 与 Android。
 - 数据源接口的 token、版本、域名和加密协议可能变化，相关常量集中在 `app/lib/network/jm/` 管理。
-- `repos/` 目录下的参考源码仅用于本地查阅，不作为应用依赖打包。
+- `repos/` 目录下的参考源码仅用于本地查阅，不作为应用依赖打包。`repos/` 已被 .gitignore 忽略、不入库，新克隆中不存在；如需参考请自行克隆上游 [JMComic-Crawler-Python](https://github.com/hect0x7/JMComic-Crawler-Python) 与 [JMComic-qt](https://github.com/tonquer/JMComic-qt)。
 - 不提交真实 `.env`、数据库、缓存、签名文件或构建产物。
 
 ## 数据目录

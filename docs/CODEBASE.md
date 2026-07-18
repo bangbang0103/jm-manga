@@ -13,6 +13,8 @@ repos/             参考源码（仅本地查阅，不打包）
 VERSION            应用版本源头
 ```
 
+> 注：`repos/` 是本地参考目录，已被 .gitignore 忽略、不入库；如需查阅请自行克隆上游 [JMComic-Crawler-Python](https://github.com/hect0x7/JMComic-Crawler-Python) 与 [JMComic-qt](https://github.com/tonquer/JMComic-qt)。
+
 ## 应用入口
 
 | 文件 | 职责 |

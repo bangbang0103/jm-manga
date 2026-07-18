@@ -18,10 +18,14 @@ __pycache__/
 .uv/
 *.egg-info/
 dist/
-build/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Release artifacts
+# Top-level output dir of scripts/release.sh and scripts/package-server.sh.
+# Nested build dirs (e.g. app/build/) stay covered by their own rules below.
+build/
 
 # Environment
 .env
@@ -40,6 +44,9 @@ opencode.json
 # Server runtime data
 server/cache/
 server/logs/
+
+# Local image cache at repository root
+/cache/
 
 # Flutter
 app/.dart_tool/

@@ -70,6 +70,21 @@ if ! git -C "${ROOT_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   exit 1
 fi
 
+dirty_files="$(git -C "${ROOT_DIR}" status --porcelain --untracked-files=no)"
+if [[ -n "${dirty_files}" ]]; then
+  echo "Working tree has uncommitted changes to tracked files:" >&2
+  echo "${dirty_files}" >&2
+  echo "Commit or stash them, then re-run this script." >&2
+  exit 1
+fi
+
+server_version="$(awk -F'"' '/^version = "/ {print $2; exit}' "${ROOT_DIR}/server/pyproject.toml")"
+if [[ "${server_version}" != "${version}" ]]; then
+  echo "Version mismatch: VERSION=${version}, server/pyproject.toml=${server_version}" >&2
+  echo "Run scripts/sync-version.sh first, then re-run this script." >&2
+  exit 1
+fi
+
 out_dir="${OUT_ROOT}"
 mkdir -p "${out_dir}"
 out_path="${out_dir}/${APP_NAME}-v${version}.${format}"

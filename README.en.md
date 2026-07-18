@@ -58,7 +58,7 @@ If you prefer to build the iOS app yourself, you need macOS with Xcode and Flutt
 For iOS Simulator:
 
 ```bash
-git clone https://github.com/bangbang0103/jm-manga
+git clone https://github.com/QPH-Coding/jm-manga
 cd app
 flutter pub get
 flutter build ios --simulator

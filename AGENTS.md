@@ -31,12 +31,13 @@ bash -n scripts/release.sh
 bash -n scripts/build-flutter.sh
 bash -n scripts/package-server.sh
 bash -n scripts/sync-version.sh
+bash -n scripts/test-flutter.sh
 ```
 
 ## 文档维护
 
 - 当前事实优先写入 `README.md` 和 `docs/ARCHITECTURE.md`。
 - 开发细节写入 `docs/DEVELOPMENT.md`。
-- 打包说明写入 `docs/BUILDING-MOBILE.md`。
-- `docs/DESIGN.md`、`docs/UI-DESIGN.md`、`docs/prototype/` 保留为原始设计背景。
+- 打包说明写入 `docs/building-mobile.md`。
+- `docs/DESIGN.md` 保留为原始设计背景。
 - 接口探测记录可保留为参考资料，不应当作实时事实。

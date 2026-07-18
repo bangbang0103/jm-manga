@@ -56,6 +56,28 @@ case "${target}" in
     ;;
 esac
 
+if ! git -C "${ROOT_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "Not a git repository: ${ROOT_DIR}" >&2
+  exit 1
+fi
+
+dirty_files="$(git -C "${ROOT_DIR}" status --porcelain --untracked-files=no)"
+if [[ -n "${dirty_files}" ]]; then
+  echo "Working tree has uncommitted changes to tracked files:" >&2
+  echo "${dirty_files}" >&2
+  echo "Commit or stash them, then re-run this script." >&2
+  exit 1
+fi
+
+pubspec_version="$(awk '/^version:/ {print $2; exit}' "${ROOT_DIR}/app/pubspec.yaml")"
+pubspec_version="${pubspec_version%%+*}"
+server_version="$(awk -F'"' '/^version = "/ {print $2; exit}' "${ROOT_DIR}/server/pyproject.toml")"
+if [[ "${pubspec_version}" != "${version}" || "${server_version}" != "${version}" ]]; then
+  echo "Version mismatch: VERSION=${version}, app/pubspec.yaml=${pubspec_version}, server/pyproject.toml=${server_version}" >&2
+  echo "Run scripts/sync-version.sh first, then re-run this script." >&2
+  exit 1
+fi
+
 run_mobile() {
   local mobile_target="$1"
   "${ROOT_DIR}/scripts/build-flutter.sh" "${mobile_target}"
@@ -102,6 +124,9 @@ clean_current_artifacts() {
   fi
 
   local any=0
+  # Empty IFS disables word splitting so paths with spaces expand as one
+  # word, while pathname expansion (glob) still applies to the pattern.
+  local IFS=
   for pattern in "${patterns[@]}"; do
     for f in ${pattern}; do
       if [[ -e "${f}" ]]; then

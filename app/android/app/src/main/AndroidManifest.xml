@@ -3,6 +3,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <!-- 保留全局明文流量：JM 域名会动态 failover，且部分图床仅提供 HTTP，
+         按域收紧难以覆盖域名变化。未来要收紧时，改用 networkSecurityConfig
+         按域配置明文白名单，而不是全局放行。 -->
     <application
         android:label="JM Manga"
         android:name="${applicationName}"
