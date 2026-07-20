@@ -12,10 +12,15 @@ class SecureStorage {
   static const _iosOptions = IOSOptions(
     accessibility: KeychainAccessibility.first_unlock_this_device,
   );
+  // macOS 发布包为 ad-hoc 签名（无开发团队），data-protection keychain 依赖
+  // keychain-access-groups entitlement 与团队前缀，ad-hoc 下不可用（-34018）；
+  // 退回文件型 login keychain，沙盒内无需额外 entitlement。
+  static const _macosOptions = MacOsOptions(useDataProtectionKeyChain: false);
 
   static const FlutterSecureStorage _instance = FlutterSecureStorage(
     aOptions: _androidOptions,
     iOptions: _iosOptions,
+    mOptions: _macosOptions,
   );
 
   static FlutterSecureStorage get instance => _instance;

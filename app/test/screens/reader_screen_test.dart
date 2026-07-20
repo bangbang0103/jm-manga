@@ -1,7 +1,4 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
-import 'package:flutter/painting.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jm_manga/models/album.dart';
 import 'package:jm_manga/models/reader_initial_data.dart';
@@ -11,26 +8,8 @@ import 'package:jm_manga/screens/reader_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../fake_repository.dart';
+import '../pending_image_provider.dart';
 import '../testable_app.dart';
-
-/// 永远不完成加载的 ImageProvider：让阅读页保持占位高度，
-/// 避免测试环境里 NetworkImage 400 触发 precache 的 FlutterError 上报。
-class _PendingImageProvider extends ImageProvider<_PendingImageProvider> {
-  const _PendingImageProvider();
-
-  @override
-  Future<_PendingImageProvider> obtainKey(ImageConfiguration configuration) {
-    return SynchronousFuture<_PendingImageProvider>(this);
-  }
-
-  @override
-  ImageStreamCompleter loadImage(
-    _PendingImageProvider key,
-    ImageDecoderCallback decode,
-  ) {
-    return OneFrameImageStreamCompleter(Completer<ImageInfo>().future);
-  }
-}
 
 class _ReaderFakeRepo extends FakeApiRepository {
   _ReaderFakeRepo(this.photo);
@@ -42,7 +21,7 @@ class _ReaderFakeRepo extends FakeApiRepository {
   Future<PhotoDetail> getPhotoDetail(String photoId) async => photo;
 
   @override
-  ImageProvider imageProvider(String url) => const _PendingImageProvider();
+  ImageProvider imageProvider(String url) => const PendingImageProvider();
 
   @override
   Future<void> syncProgress(ReadingProgress progress) async {
@@ -135,6 +114,42 @@ void main() {
       expect(repo.synced, isNotEmpty);
       expect(repo.synced.last.imageIndex, 5);
       expect(repo.synced.last.photoId, 'p1');
+    });
+
+    testWidgets('keeps the current page when toggling reader modes', (
+      WidgetTester tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({'readerMode': 'paged'});
+      final repo = _ReaderFakeRepo(_photo(pageCount: 20));
+      await tester.pumpWidget(
+        testable(
+          ReaderScreen(
+            photoId: 'p1',
+            initialData: ReaderInitialData(
+              album: _album(),
+              progressList: const [],
+            ),
+          ),
+          overrides: [apiRepositoryProvider.overrideWithValue(repo)],
+        ),
+      );
+      await _pumpReader(tester);
+      expect(find.text('Page 1 / 20'), findsOneWidget);
+
+      // 点击右侧 30% 区域翻到第 2 页。
+      await tester.tapAt(const Offset(760, 300));
+      await _pumpReader(tester);
+      expect(find.text('Page 2 / 20'), findsOneWidget);
+
+      // paged → scroll：跳回当前页。
+      await tester.tap(find.byIcon(Icons.view_agenda_outlined));
+      await _pumpReader(tester);
+      expect(find.text('Page 2 / 20'), findsOneWidget);
+
+      // scroll → paged：仍以当前页起跳。
+      await tester.tap(find.byIcon(Icons.auto_stories_outlined));
+      await _pumpReader(tester);
+      expect(find.text('Page 2 / 20'), findsOneWidget);
     });
   });
 }

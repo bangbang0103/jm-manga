@@ -1,7 +1,7 @@
-# 移动端打包指南
+# 移动端与桌面端打包指南
 
-> 当前 Flutter 工程仅构建 iOS 与 Android 安装包。
-> 工程已配置好 Android 包名 `com.jmmanga.app`，iOS 工程位于 `app/ios/`。
+> 当前 Flutter 工程构建 iOS、Android、Windows 与 macOS 安装包。
+> 工程已配置好 Android 包名与 macOS Bundle ID `com.jmmanga.app`，iOS 工程位于 `app/ios/`，桌面 runner 位于 `app/windows/`、`app/macos/`。
 
 ## 统一脚本
 
@@ -16,6 +16,9 @@
 
 # iOS 未签名 IPA
 ./scripts/release.sh ios
+
+# 当前主机的桌面包（macOS 上构建 .app zip，Windows 上构建 runner zip）
+./scripts/release.sh desktop
 
 # 全部产物：移动端 + server 包
 ./scripts/release.sh all
@@ -79,6 +82,55 @@ flutter build ios --release --no-codesign
 ```
 
 > 该 IPA 未签名，无法直接安装到设备。分发前需使用个人/企业证书重签。
+
+## Windows
+
+### 环境要求
+
+- Windows 主机 + Visual Studio（含「使用 C++ 的桌面开发」工作负载）
+- Flutter SDK
+- 脚本需要在 MSYS2 / Git Bash 环境执行（`release.sh windows`）
+
+### 构建步骤
+
+```bash
+flutter build windows --release
+```
+
+使用仓库脚本可产出 zip（含 `jm_manga.exe` 与全部依赖 dll/data）：
+
+```bash
+./scripts/release.sh windows
+```
+
+## macOS
+
+### 环境要求
+
+- macOS + Xcode 与命令行工具
+- Flutter SDK
+
+### 构建步骤
+
+```bash
+flutter build macos --release
+```
+
+使用仓库脚本可产出 `JM Manga.app` 的 zip：
+
+```bash
+./scripts/release.sh macos
+```
+
+默认保留构建产物的 ad-hoc 签名（本机可直接运行；拷贝到其他 Mac 首次需右键 → 打开绕过 Gatekeeper）。如需用开发者证书重签：
+
+```bash
+CODESIGN_IDENTITY="Apple Development: you@example.com (TEAMID)" ./scripts/release.sh macos
+```
+
+重签不会丢失 entitlements：脚本从证书中提取 Team ID 展开 `$(AppIdentifierPrefix)`，由内向外逐个签名嵌套的 Framework/dylib，最后带 entitlements 签主 bundle（不使用会丢弃 entitlements 的裸 `codesign --deep`）。identity 也可传证书 SHA-1。
+
+> 注意：`app/macos/Runner/Release.entitlements` 中的 `com.apple.security.network.client` 是必需配置，重建 runner 时务必保留，否则 release 包无网络能力。不要加入 `keychain-access-groups`：它需要开发团队才能构建（与 ad-hoc 默认签名冲突），macOS 端 SecureStorage 已改用文件型 keychain（`useDataProtectionKeyChain: false`），不需要该 entitlement。
 
 ## 版本同步
 

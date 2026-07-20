@@ -355,10 +355,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preloadSubtitle => '阅读时提前预加载往后的图片数量';
 
   @override
-  String get gridColumnsTitle => '每行封面数';
+  String get gridDensityTitle => '封面密度';
 
   @override
-  String get gridColumnsSubtitle => '漫画封面每行显示的个数';
+  String get gridDensitySubtitle => '封面大小偏好，每行列数随屏幕宽度自动调整';
+
+  @override
+  String get gridDensityCompact => '紧凑';
+
+  @override
+  String get gridDensityStandard => '标准';
+
+  @override
+  String get gridDensityLoose => '宽松';
+
+  @override
+  String get readerModeScroll => '滚动模式';
+
+  @override
+  String get readerModePaged => '翻页模式';
 
   @override
   String get settingsLogLevelTitle => '日志等级';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jm_manga/l10n/app_localizations.dart';
+import '../widgets/max_width_center.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -114,84 +115,88 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const _AppHeader(),
-            const SizedBox(height: 24),
-            _SectionTitle(
-              title: l10n.sectionAccounts,
-              trailing: IconButton(
-                icon: const Icon(Icons.add),
-                tooltip: l10n.accountAddTooltip,
-                onPressed: () => _addAccount(context, ref),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: Icon(
-                  Icons.no_accounts,
-                  color: currentId == null ? theme.colorScheme.primary : null,
+      body: MaxWidthCenter(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _AppHeader(),
+              const SizedBox(height: 24),
+              _SectionTitle(
+                title: l10n.sectionAccounts,
+                trailing: IconButton(
+                  icon: const Icon(Icons.add),
+                  tooltip: l10n.accountAddTooltip,
+                  onPressed: () => _addAccount(context, ref),
                 ),
-                title: Text(l10n.accountAnonymous),
-                selected: currentId == null,
-                onTap: () => _selectAccount(ref, null),
               ),
-            ),
-            ...accounts.map((account) {
-              final selected = account.id == currentId;
-              return Card(
+              Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   leading: Icon(
-                    account.isAnonymous ? Icons.no_accounts : Icons.person,
-                    color: selected ? theme.colorScheme.primary : null,
+                    Icons.no_accounts,
+                    color: currentId == null ? theme.colorScheme.primary : null,
                   ),
-                  title: Text(
-                    account.displayName,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (selected &&
-                          !account.isAnonymous &&
-                          account.password != null)
-                        IconButton(
-                          icon: const Icon(Icons.refresh),
-                          tooltip: l10n.accountRefreshTooltip,
-                          onPressed: () => _refreshLogin(context, ref, account),
-                        ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        tooltip: l10n.actionDelete,
-                        onPressed: () => _removeAccount(context, ref, account),
-                      ),
-                    ],
-                  ),
-                  onTap: () => _selectAccount(ref, account.id),
-                  selected: selected,
+                  title: Text(l10n.accountAnonymous),
+                  selected: currentId == null,
+                  onTap: () => _selectAccount(ref, null),
                 ),
-              );
-            }),
-            const SizedBox(height: 32),
-            _SectionTitle(title: l10n.sectionAppearance),
-            ThemeModeTile(value: config.themeMode),
-            LanguageTile(value: config.locale),
-            const SizedBox(height: 32),
-            _SectionTitle(title: l10n.sectionReader),
-            const SizedBox(height: 16),
-            PreloadTile(value: config.preloadCount),
-            const SizedBox(height: 16),
-            GridColumnsTile(value: config.gridColumns),
-            const SizedBox(height: 32),
-            _SectionTitle(title: l10n.aboutTitle),
-            AboutCard(deviceId: ref.watch(deviceIdProvider)),
-            const SizedBox(height: 32),
-          ],
+              ),
+              ...accounts.map((account) {
+                final selected = account.id == currentId;
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: Icon(
+                      account.isAnonymous ? Icons.no_accounts : Icons.person,
+                      color: selected ? theme.colorScheme.primary : null,
+                    ),
+                    title: Text(
+                      account.displayName,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (selected &&
+                            !account.isAnonymous &&
+                            account.password != null)
+                          IconButton(
+                            icon: const Icon(Icons.refresh),
+                            tooltip: l10n.accountRefreshTooltip,
+                            onPressed: () =>
+                                _refreshLogin(context, ref, account),
+                          ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          tooltip: l10n.actionDelete,
+                          onPressed: () =>
+                              _removeAccount(context, ref, account),
+                        ),
+                      ],
+                    ),
+                    onTap: () => _selectAccount(ref, account.id),
+                    selected: selected,
+                  ),
+                );
+              }),
+              const SizedBox(height: 32),
+              _SectionTitle(title: l10n.sectionAppearance),
+              ThemeModeTile(value: config.themeMode),
+              LanguageTile(value: config.locale),
+              const SizedBox(height: 32),
+              _SectionTitle(title: l10n.sectionReader),
+              const SizedBox(height: 16),
+              PreloadTile(value: config.preloadCount),
+              const SizedBox(height: 16),
+              GridDensityTile(value: config.gridDensity),
+              const SizedBox(height: 32),
+              _SectionTitle(title: l10n.aboutTitle),
+              AboutCard(deviceId: ref.watch(deviceIdProvider)),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );

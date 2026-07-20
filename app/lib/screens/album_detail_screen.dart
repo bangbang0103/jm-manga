@@ -73,7 +73,9 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen>
   }
 
   void _showCover(BuildContext context, String imageUrl) {
-    final imageProvider = ref.read(apiRepositoryProvider).imageProvider(imageUrl);
+    final imageProvider = ref
+        .read(apiRepositoryProvider)
+        .imageProvider(imageUrl);
     showDialog(
       context: context,
       builder: (_) => Stack(
@@ -83,7 +85,12 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen>
             minScale: 0.5,
             maxScale: 4,
             child: GestureDetector(
-              onLongPress: () => showImageDownloadSheet(context, ref, url: imageUrl, fallbackName: 'cover.jpg'),
+              onLongPress: () => showImageDownloadSheet(
+                context,
+                ref,
+                url: imageUrl,
+                fallbackName: 'cover.jpg',
+              ),
               behavior: HitTestBehavior.translucent,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 48),
@@ -168,15 +175,17 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen>
     final l10n = AppLocalizations.of(context)!;
     final albumAsync = ref.watch(albumDetailProvider(widget.albumId));
     final progressAsync = ref.watch(albumProgressProvider(widget.albumId));
-    final favoriteStatusAsync = ref.watch(favoriteStatusProvider(widget.albumId));
-    final showAppBar = albumAsync.isLoading || albumAsync.hasError;
+    final favoriteStatusAsync = ref.watch(
+      favoriteStatusProvider(widget.albumId),
+    );
+    // 刷新（带旧数据重新加载，如从阅读器返回触发的 invalidate）期间，
+    // when() 仍渲染 data 分支并显示 SliverAppBar；占位 AppBar 只在
+    // 「无内容可显示」或出错时出现，避免双层 TopBar。
+    final showAppBar = !albumAsync.hasValue || albumAsync.hasError;
 
     return Scaffold(
       appBar: showAppBar
-          ? AppBar(
-              leading: const BackButton(),
-              title: const SizedBox.shrink(),
-            )
+          ? AppBar(leading: const BackButton(), title: const SizedBox.shrink())
           : null,
       body: albumAsync.when(
         data: (album) {
@@ -424,7 +433,8 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen>
                     albumId: album.albumId,
                     title: album.title,
                     tags: album.tags,
-                    coverUrl: album.coverUrl ??
+                    coverUrl:
+                        album.coverUrl ??
                         ref.read(apiRepositoryProvider).coverUrl(album.albumId),
                   ),
                 ),
@@ -498,8 +508,9 @@ class _ChaptersTab extends StatelessWidget {
                         return Icon(
                           Icons.circle_outlined,
                           size: 16,
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.4),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.4,
+                          ),
                         );
                       }
                       if (progress.isFinished) {
@@ -535,8 +546,9 @@ class _ChaptersTab extends StatelessWidget {
               final progress = _findProgress(progressList, photoId);
               final percent = _progressPercent(progress);
 
-              final fillAlpha =
-                  theme.brightness == Brightness.dark ? 0.18 : 0.12;
+              final fillAlpha = theme.brightness == Brightness.dark
+                  ? 0.18
+                  : 0.12;
               final statusColor = percent != null
                   ? theme.colorScheme.onSurface
                   : theme.colorScheme.onSurfaceVariant;
@@ -554,18 +566,17 @@ class _ChaptersTab extends StatelessWidget {
                           child: FractionallySizedBox(
                             widthFactor: percent / 100,
                             child: Container(
-                              color: theme.colorScheme.primary
-                                  .withValues(alpha: fillAlpha),
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: fillAlpha,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ListTile(
                       leading: CircleAvatar(
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHigh,
-                        foregroundColor:
-                            theme.colorScheme.onSurfaceVariant,
+                        backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                        foregroundColor: theme.colorScheme.onSurfaceVariant,
                         child: Text('${index + 1}'),
                       ),
                       title: Text(title),
@@ -612,9 +623,7 @@ class _ChaptersTab extends StatelessWidget {
     if (progress.isFinished) return 100;
     final pageCount = progress.pageCount;
     if (pageCount != null && pageCount > 0) {
-      return ((progress.imageIndex + 1) / pageCount * 100)
-          .round()
-          .clamp(0, 99);
+      return ((progress.imageIndex + 1) / pageCount * 100).round().clamp(0, 99);
     }
     return null;
   }

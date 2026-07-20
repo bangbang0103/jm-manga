@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:jm_manga/l10n/app_localizations.dart';
+import '../widgets/max_width_center.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../utils/app_logger.dart';
@@ -41,10 +42,7 @@ class _LogsScreenState extends State<LogsScreen> {
     try {
       final path = await globalLogger.exportToTempFile();
       await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(path)],
-          subject: 'JM Manga logs',
-        ),
+        ShareParams(files: [XFile(path)], subject: 'JM Manga logs'),
       );
     } catch (e) {
       if (mounted) {
@@ -149,156 +147,183 @@ class _LogsScreenState extends State<LogsScreen> {
             .reversed
             .toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.logsTitle),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            tooltip: l10n.logsExport,
-            onPressed: allEntries.isEmpty ? null : _export,
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.logsTitle),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.share),
+                tooltip: l10n.logsExport,
+                onPressed: allEntries.isEmpty ? null : _export,
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: l10n.logsClear,
+                onPressed: allEntries.isEmpty
+                    ? null
+                    : () => globalLogger.clear(),
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: l10n.logsClear,
-            onPressed: allEntries.isEmpty ? null : () => globalLogger.clear(),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          body: MaxWidthCenter(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: l10n.logsSearchHint,
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () => setState(() => _searchQuery = ''),
-                          )
-                        : null,
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
-                  onChanged: (value) => setState(() => _searchQuery = value),
-                ),
-                const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _FilterChip(
-                        label: l10n.logsAllLevels,
-                        selected: _filter == null,
-                        onSelected: (_) => setState(() => _filter = null),
-                      ),
-                      ...LogLevel.values.map((level) {
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: _FilterChip(
-                            label: level.label,
-                            selected: _filter == level,
-                            color: _levelColor(level, theme.colorScheme),
-                            onSelected: (_) => setState(() => _filter = level),
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: l10n.logsSearchHint,
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () =>
+                                      setState(() => _searchQuery = ''),
+                                )
+                              : null,
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        );
-                      }),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
+                        ),
+                        onChanged: (value) =>
+                            setState(() => _searchQuery = value),
+                      ),
+                      const SizedBox(height: 12),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _FilterChip(
+                              label: l10n.logsAllLevels,
+                              selected: _filter == null,
+                              onSelected: (_) => setState(() => _filter = null),
+                            ),
+                            ...LogLevel.values.map((level) {
+                              return Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: _FilterChip(
+                                  label: level.label,
+                                  selected: _filter == level,
+                                  color: _levelColor(level, theme.colorScheme),
+                                  onSelected: (_) =>
+                                      setState(() => _filter = level),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
+                ),
+                Expanded(
+                  child: entries.isEmpty
+                      ? Center(
+                          child: Text(
+                            l10n.logsEmpty,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.only(
+                            left: 16,
+                            right: 16,
+                            bottom: 24,
+                          ),
+                          itemCount: entries.length,
+                          separatorBuilder: (context, index) =>
+                              const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final entry = entries[index];
+                            final color = _levelColor(
+                              entry.level,
+                              theme.colorScheme,
+                            );
+                            return InkWell(
+                              onTap: () => _showEntry(entry),
+                              onLongPress: () => _copyEntry(entry),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: color.withValues(
+                                              alpha: 0.12,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            entry.level.short,
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  color: color,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          entry.formattedTime,
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      entry.message,
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                    if (entry.error != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Text(
+                                          entry.error.toString(),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme.colorScheme.error,
+                                              ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
           ),
-          Expanded(
-            child: entries.isEmpty
-                ? Center(
-                    child: Text(
-                      l10n.logsEmpty,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      bottom: 24,
-                    ),
-                    itemCount: entries.length,
-                    separatorBuilder: (context, index) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final entry = entries[index];
-                      final color = _levelColor(entry.level, theme.colorScheme);
-                      return InkWell(
-                        onTap: () => _showEntry(entry),
-                        onLongPress: () => _copyEntry(entry),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: color.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      entry.level.short,
-                                      style: theme.textTheme.labelSmall?.copyWith(
-                                        color: color,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    entry.formattedTime,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                entry.message,
-                                style: theme.textTheme.bodyMedium,
-                              ),
-                              if (entry.error != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    entry.error.toString(),
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.error,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
+        );
       },
     );
   }

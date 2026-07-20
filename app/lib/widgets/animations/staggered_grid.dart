@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../providers/config_provider.dart';
 import 'animated_item.dart';
+
+/// 封面网格的统一 delegate：列数随可用宽度自适应，密度由设置决定。
+SliverGridDelegate coverGridDelegate(GridDensity density) {
+  return SliverGridDelegateWithMaxCrossAxisExtent(
+    maxCrossAxisExtent: density.maxCrossAxisExtent,
+    childAspectRatio: 2 / 3,
+    crossAxisSpacing: 12,
+    mainAxisSpacing: 16,
+  );
+}
 
 /// 带统一 stagger 进入动画的 GridView。
 ///

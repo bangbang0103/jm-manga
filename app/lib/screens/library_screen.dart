@@ -330,8 +330,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                       decoration: InputDecoration(
                         hintText: l10n.recentSearchHint,
                         prefixIcon: const Icon(Icons.search),
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
                       ),
                       onChanged: (value) => ref
                           .read(readingProgressProvider.notifier)
@@ -392,9 +393,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                   isEditing: _isEditingRecent,
                   selectedIds: _selectedAlbumIds,
                   onToggleSelection: _toggleSelection,
-                  onLongPress: (progress) => _enterRecentEditMode(
-                    selectAlbumId: progress.albumId,
-                  ),
+                  onLongPress: (progress) =>
+                      _enterRecentEditMode(selectAlbumId: progress.albumId),
                 ),
               ],
             ),
@@ -439,7 +439,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   Widget _buildRecentEditBottomBar(List<String> visibleAlbumIds) {
     final l10n = AppLocalizations.of(context)!;
-    final allSelected = visibleAlbumIds.isNotEmpty &&
+    final allSelected =
+        visibleAlbumIds.isNotEmpty &&
         visibleAlbumIds.every(_selectedAlbumIds.contains);
 
     final theme = Theme.of(context);
@@ -458,8 +459,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 onPressed: _isDeleting
                     ? null
                     : allSelected
-                        ? _deselectAll
-                        : () => _selectAll(visibleAlbumIds),
+                    ? _deselectAll
+                    : () => _selectAll(visibleAlbumIds),
                 child: Text(
                   allSelected ? l10n.recentDeselectAll : l10n.recentSelectAll,
                 ),
@@ -539,7 +540,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               ),
             );
           }
-          final gridColumns = ref.watch(configProvider).gridColumns;
+          final gridDensity = ref.watch(configProvider).gridDensity;
           return NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               if (onLoadMore != null &&
@@ -551,18 +552,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             },
             child: StaggeredGrid<T>(
               items: items,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: gridColumns,
-                childAspectRatio: 2 / 3,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 16,
-              ),
+              gridDelegate: coverGridDelegate(gridDensity),
               staggerDelay: const Duration(milliseconds: 35),
               itemBuilder: (context, item, index) {
                 final albumId = albumIdFor?.call(item);
                 final isSelected =
                     albumId != null && selectedIds.contains(albumId);
-                final isFavorite = albumId != null &&
+                final isFavorite =
+                    albumId != null &&
                     (favoriteIdsAsync.valueOrNull?.contains(albumId) ?? false);
 
                 Widget card = MangaCoverCard(

@@ -746,17 +746,47 @@ abstract class AppLocalizations {
   /// **'Number of images to preload ahead while reading'**
   String get preloadSubtitle;
 
-  /// No description provided for @gridColumnsTitle.
+  /// No description provided for @gridDensityTitle.
   ///
   /// In en, this message translates to:
-  /// **'Grid Columns'**
-  String get gridColumnsTitle;
+  /// **'Cover Density'**
+  String get gridDensityTitle;
 
-  /// No description provided for @gridColumnsSubtitle.
+  /// No description provided for @gridDensitySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Number of manga covers per row'**
-  String get gridColumnsSubtitle;
+  /// **'Preferred cover size; columns adapt to screen width'**
+  String get gridDensitySubtitle;
+
+  /// No description provided for @gridDensityCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get gridDensityCompact;
+
+  /// No description provided for @gridDensityStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get gridDensityStandard;
+
+  /// No description provided for @gridDensityLoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Loose'**
+  String get gridDensityLoose;
+
+  /// No description provided for @readerModeScroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll mode'**
+  String get readerModeScroll;
+
+  /// No description provided for @readerModePaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap-to-turn mode'**
+  String get readerModePaged;
 
   /// No description provided for @settingsLogLevelTitle.
   ///

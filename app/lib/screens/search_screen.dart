@@ -168,9 +168,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             )
           : results.when(
               data: (items) {
-                final notifier = ref.read(
-                  searchProvider(request).notifier,
-                );
+                final notifier = ref.read(searchProvider(request).notifier);
                 return RefreshIndicator(
                   onRefresh: () async => notifier.search(),
                   child: NotificationListener<ScrollNotification>(
@@ -190,9 +188,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
               loading: () => const AppLoadingIndicator(),
               error: (e, _) {
-                final notifier = ref.read(
-                  searchProvider(request).notifier,
-                );
+                final notifier = ref.read(searchProvider(request).notifier);
                 return ErrorPlaceholder(
                   message: mapErrorToUserMessage(e, l10n),
                   onRetry: notifier.search,
@@ -287,16 +283,11 @@ class _SearchGrid extends ConsumerWidget {
     }
 
     final favoriteIdsAsync = ref.watch(favoriteAlbumIdsProvider);
-    final gridColumns = ref.watch(configProvider).gridColumns;
+    final gridDensity = ref.watch(configProvider).gridDensity;
 
     return StaggeredGrid<dynamic>(
       items: items,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: gridColumns,
-        childAspectRatio: 2 / 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 16,
-      ),
+      gridDelegate: coverGridDelegate(gridDensity),
       loadingIndicator: hasMore ? const AppLoadingIndicator(size: 24) : null,
       itemBuilder: (context, item, index) {
         final repo = ref.read(apiRepositoryProvider);

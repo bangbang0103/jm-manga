@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/config_provider.dart';
 import '../utils/proxy_config.dart';
 import '../utils/top_toast.dart';
+import '../widgets/max_width_center.dart';
 
 class ProxySettingsScreen extends ConsumerStatefulWidget {
   const ProxySettingsScreen({super.key});
@@ -102,87 +103,89 @@ class _ProxySettingsScreenState extends ConsumerState<ProxySettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.proxyTitle)),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.proxyTitle, style: theme.textTheme.titleSmall),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.proxySubtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+      body: MaxWidthCenter(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.proxyTitle, style: theme.textTheme.titleSmall),
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.proxySubtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        labelText: l10n.proxyTitle,
-                        hintText: l10n.proxyHint,
-                        errorText: _error,
-                        border: const OutlineInputBorder(),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _controller,
+                        decoration: InputDecoration(
+                          labelText: l10n.proxyTitle,
+                          hintText: l10n.proxyHint,
+                          errorText: _error,
+                          border: const OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.url,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _save(),
                       ),
-                      keyboardType: TextInputType.url,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _save(),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.proxyProtocolHint,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.proxyProtocolHint,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (current != null && current.isNotEmpty)
-              Text(
-                '${l10n.proxyTitle}: $current',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            const Spacer(),
-            FilledButton.tonal(
-              onPressed: _testing ? null : _test,
-              child: _testing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(l10n.proxyTest),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _clear,
-                    child: Text(l10n.actionClear),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _save,
-                    child: Text(l10n.actionSave),
+              ),
+              const SizedBox(height: 16),
+              if (current != null && current.isNotEmpty)
+                Text(
+                  '${l10n.proxyTitle}: $current',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-              ],
-            ),
-          ],
+              const Spacer(),
+              FilledButton.tonal(
+                onPressed: _testing ? null : _test,
+                child: _testing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(l10n.proxyTest),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _clear,
+                      child: Text(l10n.actionClear),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _save,
+                      child: Text(l10n.actionSave),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

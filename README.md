@@ -4,7 +4,7 @@
 
 <img src="docs/assets/icon.png" alt="JM Manga icon" width="120">
 
-一个简洁的 iOS / Android 漫画阅读应用。本项目仅供个人学习和技术研究使用。
+一个简洁的 iOS / Android / Windows / macOS 漫画阅读应用。本项目仅供个人学习和技术研究使用。
 
 > **免责声明**：本项目仅供个人学习和技术研究使用，不存储、不传播任何受版权保护的内容。应用内展示的所有数据均来自第三方公开接口，版权归原作者所有。请遵守当地法律法规，禁止将本项目用于任何商业或非法用途。
 
@@ -26,6 +26,7 @@ Release 页面会附带预编译包：
 
 - Android：`jm-manga-apk-v<版本>-android-release.apk`
 - iOS：`jm-manga-unsigned-ipa-v<版本>-ios-release.ipa`
+- Windows / macOS：`jm-manga-desktop-v<版本>-<平台>-<架构>-release.zip`（免安装，解压即用）
 
 每个包都附带同名的 `.sha256` 校验文件，可用于校验完整性。
 
@@ -74,6 +75,13 @@ flutter install
 
 也可以构建未签名 IPA（`flutter build ipa --no-codesign`），再通过 Sideloadly 或其他你信任的工具签名安装。
 
+### Windows / macOS
+
+桌面端 zip 解压即用：
+
+- Windows：解压后运行 `jm_manga.exe`。
+- macOS：解压得到 `JM Manga.app`。包为 ad-hoc 签名、未经 Apple 公证，首次打开如被 Gatekeeper 拦截，在 Finder 中右键 → 打开即可。
+
 ## 开发
 
 本地开发环境、构建说明和开发规范见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。
@@ -81,7 +89,7 @@ flutter install
 更多文档：
 
 - [架构说明](docs/ARCHITECTURE.md)
-- [移动端打包](docs/building-mobile.md)
+- [移动端与桌面端打包](docs/building-mobile.md)
 
 ## 站在巨人的肩膀上
 

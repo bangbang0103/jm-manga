@@ -2,12 +2,12 @@
 
 ## 总览
 
-JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS 与 Android。
+JM Manga 是个人使用的 JM 漫画阅读应用，支持 iOS、Android、Windows 与 macOS。
 
 - **前端**：Flutter 客户端直接请求数据源接口与图片服务。
 - **可选自托管加速服务（BETA）**：`server/` 目录下是一个基于 FastAPI + jmcomic 的 Python 服务。用户可将其部署在 VPS/NAS/本地，然后在 Flutter 客户端的「自定义域名（BETA）」中把 API 域名与图片域名指向该服务，以获得缓存、线路优化等加速能力。该服务完全可选，不启用时 Flutter 客户端仍直连官方。
 - **本地存储**：`SecureStorage` 保存账号凭据和会话凭证；SQLite 保存收藏与阅读进度；SharedPreferences 保存代理、日志级别、主题、语言、搜索历史、图片缓存 LRU 元数据等非敏感配置。
-- **发布**：直接构建 APK/IPA 后安装即可使用。
+- **发布**：移动端构建 APK 与未签名 IPA，桌面端构建 Windows/macOS zip（ad-hoc 签名），安装即可使用。
 
 
 
@@ -42,6 +42,13 @@ JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS
 
 - 应用固定直连 JM 数据源接口与图片服务，无后端服务器选择入口。
 - 网络层支持在 设置 > 高级选项 > 代理设置 中配置 HTTP / SOCKS5 代理。
+
+响应式与阅读模式：
+
+- 宽屏（≥840dp，横屏/桌面窗口）下主导航由 BottomNavigationBar 切换为 NavigationRail；表单/文本类页面用 `MaxWidthCenter`（内容带 840dp）限宽居中。
+- 封面网格列数随宽度自适应（`coverGridDelegate` + `SliverGridDelegateWithMaxCrossAxisExtent`），密度预设（紧凑/标准/宽松）保存在配置中，由旧的 2–4 列设置自动迁移。
+- 阅读器支持竖向滚动与点击翻页两种模式（`readerMode` 配置，工具栏可切换）；点击翻页为单页 PageView（左/右 30% 点击区翻页，中间呼出工具栏），两种模式进度都以 `image_index` 记录。
+- 桌面端跳过启动时的更新检查（更新包面向 APK）与退出确认弹窗。
 
 敏感信息：
 
@@ -99,7 +106,8 @@ JM Manga 是个人使用的移动端 JM 漫画阅读应用，目前仅支持 iOS
 
 ## 设计约束
 
-- 当前仅支持 iOS 与 Android。
+- 支持 iOS、Android、Windows 与 macOS；明确不支持 Linux 与 Web。
+  Windows 侧 SQLite 走 `sqflite_common_ffi`，sqlite3 原生库由 `sqlite3` 3.x 的 native-assets 构建钩子随构建从源码编译（无需预置 sqlite3.dll）；iOS/Android/macOS 用 sqflite 原生插件。
 - 数据源接口的 token、版本、域名和加密协议可能变化，相关常量集中在 `app/lib/network/jm/` 管理。
 - `repos/` 目录下的参考源码仅用于本地查阅，不作为应用依赖打包。`repos/` 已被 .gitignore 忽略、不入库，新克隆中不存在；如需参考请自行克隆上游 [JMComic-Crawler-Python](https://github.com/hect0x7/JMComic-Crawler-Python) 与 [JMComic-qt](https://github.com/tonquer/JMComic-qt)。
 - 不提交真实 `.env`、数据库、缓存、签名文件或构建产物。

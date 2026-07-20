@@ -58,6 +58,25 @@ void main() {
 
       expect(find.text('Favorite'), findsOneWidget);
     });
+
+    testWidgets('wide layout uses NavigationRail instead of bottom bar', (
+      WidgetTester tester,
+    ) async {
+      // 逻辑宽度 960 ≥ 840，触发宽屏导航。
+      tester.view.physicalSize = const Size(1680, 1050);
+      tester.view.devicePixelRatio = 1.75;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(testable(const MainScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byType(BottomNavigationBar), findsNothing);
+
+      await tester.tap(find.text('Library'));
+      await tester.pumpAndSettle();
+      expect(find.text('Favorite'), findsOneWidget);
+    });
   });
 
   group('RankingsScreen', () {

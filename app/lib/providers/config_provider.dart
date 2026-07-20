@@ -8,11 +8,61 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/app_logger.dart';
 import '../utils/custom_domain_utils.dart';
 
+/// 封面网格密度。列数由屏幕宽度决定，密度决定单格最大宽度。
+enum GridDensity { compact, standard, loose }
+
+extension GridDensityLayout on GridDensity {
+  /// 封面网格单格最大宽度（逻辑像素）。
+  /// 以 390dp 手机（网格可用宽度约 358）为参照：compact 约 3-4 列、
+  /// standard 约 3 列（对齐旧版默认观感）、loose 约 2 列。
+  double get maxCrossAxisExtent => switch (this) {
+    GridDensity.compact => 100,
+    GridDensity.standard => 150,
+    GridDensity.loose => 240,
+  };
+
+  String get prefValue => switch (this) {
+    GridDensity.compact => 'compact',
+    GridDensity.standard => 'standard',
+    GridDensity.loose => 'loose',
+  };
+
+  static GridDensity parse(String? value) => switch (value) {
+    'compact' => GridDensity.compact,
+    'loose' => GridDensity.loose,
+    _ => GridDensity.standard,
+  };
+
+  /// 旧的「每行列数」设置（2–4）迁移映射：列数越少封面越大，
+  /// 对应越宽松的密度（2 列 → loose，3 列 → standard，4 列 → compact）。
+  static GridDensity fromLegacyColumns(int columns) => switch (columns) {
+    2 => GridDensity.loose,
+    4 => GridDensity.compact,
+    _ => GridDensity.standard,
+  };
+}
+
+/// 阅读器翻页模式：竖向滚动 / 点击翻页。
+enum ReaderMode { scroll, paged }
+
+extension ReaderModePref on ReaderMode {
+  String get prefValue => switch (this) {
+    ReaderMode.scroll => 'scroll',
+    ReaderMode.paged => 'paged',
+  };
+
+  static ReaderMode parse(String? value) => switch (value) {
+    'paged' => ReaderMode.paged,
+    _ => ReaderMode.scroll,
+  };
+}
+
 class AppConfig {
   final ThemeMode themeMode;
   final int preloadCount;
   final Locale locale;
-  final int gridColumns;
+  final GridDensity gridDensity;
+  final ReaderMode readerMode;
   final bool autoSelectJmDomain;
   final String? proxyUrl;
   final LogLevel logLevel;
@@ -23,7 +73,8 @@ class AppConfig {
     this.themeMode = ThemeMode.system,
     this.preloadCount = 5,
     this.locale = const Locale('en'),
-    this.gridColumns = 3,
+    this.gridDensity = GridDensity.standard,
+    this.readerMode = ReaderMode.scroll,
     this.autoSelectJmDomain = true,
     this.proxyUrl,
     this.logLevel = LogLevel.info,
@@ -35,7 +86,8 @@ class AppConfig {
     ThemeMode? themeMode,
     int? preloadCount,
     Locale? locale,
-    int? gridColumns,
+    GridDensity? gridDensity,
+    ReaderMode? readerMode,
     bool? autoSelectJmDomain,
     String? proxyUrl,
     LogLevel? logLevel,
@@ -49,7 +101,8 @@ class AppConfig {
       themeMode: themeMode ?? this.themeMode,
       preloadCount: preloadCount ?? this.preloadCount,
       locale: locale ?? this.locale,
-      gridColumns: gridColumns ?? this.gridColumns,
+      gridDensity: gridDensity ?? this.gridDensity,
+      readerMode: readerMode ?? this.readerMode,
       autoSelectJmDomain: autoSelectJmDomain ?? this.autoSelectJmDomain,
       proxyUrl: clearProxyUrl ? null : (proxyUrl ?? this.proxyUrl),
       logLevel: logLevel ?? this.logLevel,
@@ -67,7 +120,9 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
   static const _themeModeKey = 'themeMode';
   static const _preloadCountKey = 'preloadCount';
   static const _localeKey = 'locale';
-  static const _gridColumnsKey = 'gridColumns';
+  static const _gridDensityKey = 'gridDensity';
+  static const _legacyGridColumnsKey = 'gridColumns';
+  static const _readerModeKey = 'readerMode';
   static const _autoSelectJmDomainKey = 'autoSelectJmDomain';
   static const _proxyUrlKey = 'proxyUrl';
   static const _logLevelKey = 'logLevel';
@@ -146,7 +201,15 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
     final preloadCount = prefs.getInt(_preloadCountKey);
     final themeMode = _parseThemeMode(prefs.getString(_themeModeKey));
     final locale = _parseLocale(prefs.getString(_localeKey));
-    final gridColumns = prefs.getInt(_gridColumnsKey);
+    // 旧的 gridColumns（int，2–4）一次性迁移为密度预设。
+    final gridDensityPref = prefs.getString(_gridDensityKey);
+    final legacyGridColumns = prefs.getInt(_legacyGridColumnsKey);
+    final gridDensity = gridDensityPref != null
+        ? GridDensityLayout.parse(gridDensityPref)
+        : (legacyGridColumns == null
+              ? state.gridDensity
+              : GridDensityLayout.fromLegacyColumns(legacyGridColumns));
+    final readerMode = ReaderModePref.parse(prefs.getString(_readerModeKey));
     final autoSelectJmDomain = prefs.getBool(_autoSelectJmDomainKey);
     final proxyUrl = prefs.getString(_proxyUrlKey);
     final logLevel = _parseLogLevel(prefs.getString(_logLevelKey));
@@ -163,9 +226,8 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
       themeMode: themeMode,
       preloadCount: preloadCount ?? state.preloadCount,
       locale: locale,
-      gridColumns: gridColumns == null
-          ? state.gridColumns
-          : gridColumns.clamp(2, 4),
+      gridDensity: gridDensity,
+      readerMode: readerMode,
       autoSelectJmDomain: autoSelectJmDomain ?? state.autoSelectJmDomain,
       proxyUrl: proxyUrl,
       logLevel: logLevel,
@@ -193,11 +255,18 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
     state = state.copyWith(locale: locale);
   }
 
-  Future<void> setGridColumns(int columns) async {
-    final clamped = columns.clamp(2, 4);
+  Future<void> setGridDensity(GridDensity density) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_gridColumnsKey, clamped);
-    state = state.copyWith(gridColumns: clamped);
+    await prefs.setString(_gridDensityKey, density.prefValue);
+    // 迁移完成后清掉旧 key，避免下次启动重复映射。
+    await prefs.remove(_legacyGridColumnsKey);
+    state = state.copyWith(gridDensity: density);
+  }
+
+  Future<void> setReaderMode(ReaderMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_readerModeKey, mode.prefValue);
+    state = state.copyWith(readerMode: mode);
   }
 
   Future<void> setProxyUrl(String? url) async {
@@ -236,7 +305,10 @@ class ConfigNotifier extends StateNotifier<AppConfig> {
       await prefs.remove(_customApiDomainsKey);
       state = state.copyWith(clearCustomApiDomains: true);
     } else {
-      await prefs.setString(_customApiDomainsKey, _encodeStringList(normalized));
+      await prefs.setString(
+        _customApiDomainsKey,
+        _encodeStringList(normalized),
+      );
       state = state.copyWith(customApiDomains: normalized);
     }
   }

@@ -160,26 +160,20 @@ class _CategoryGrid extends ConsumerWidget {
     }
 
     final favoriteIdsAsync = ref.watch(favoriteAlbumIdsProvider);
-    final gridColumns = ref.watch(configProvider).gridColumns;
+    final gridDensity = ref.watch(configProvider).gridDensity;
 
     return StaggeredGrid<AlbumItem>(
       items: items,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: gridColumns,
-        childAspectRatio: 2 / 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 16,
-      ),
-      loadingIndicator:
-          hasMore
-              ? const Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-              : null,
+      gridDelegate: coverGridDelegate(gridDensity),
+      loadingIndicator: hasMore
+          ? const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          : null,
       itemBuilder: (context, item, index) {
         final repo = ref.read(apiRepositoryProvider);
         final isFavorite =

@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../local/local_manga_store.dart';
 import '../providers/owner_key_provider.dart';
+import '../widgets/max_width_center.dart';
 
 String _formatBytes(int bytes) {
   if (bytes < 1024) return '$bytes B';
@@ -145,108 +146,118 @@ class _CacheScreenState extends ConsumerState<CacheScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.cacheTitle),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _refresh,
-        child: FutureBuilder<_CacheSizes>(
-          future: _sizesFuture,
-          builder: (context, snapshot) {
-            final sizes = snapshot.data ??
-                const _CacheSizes(coverCache: 0, imageCache: 0, database: 0);
-            final ready = snapshot.connectionState == ConnectionState.done &&
-                !snapshot.hasError;
-            return ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              children: [
-                Card(
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: const Icon(Icons.image_outlined),
-                        title: Text(l10n.cacheCoverCache),
-                        subtitle: ready && sizes.coverCache == 0
-                            ? Text(
-                                l10n.cacheCoverCacheZeroHint,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                              )
-                            : null,
-                        trailing: Text(
-                          ready
-                              ? _formatBytes(sizes.coverCache)
-                              : l10n.calculatingLabel,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.photo_library_outlined),
-                        title: Text(l10n.cacheImageCache),
-                        subtitle: ready && sizes.imageCache == 0
-                            ? Text(
-                                l10n.cacheImageCacheZeroHint,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                              )
-                            : null,
-                        trailing: Text(
-                          ready
-                              ? _formatBytes(sizes.imageCache)
-                              : l10n.calculatingLabel,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.storage_outlined),
-                        title: Text(l10n.cacheDatabase),
-                        trailing: Text(
-                          ready
-                              ? _formatBytes(sizes.database)
-                              : l10n.calculatingLabel,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (ready)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => _clearAndRefresh(_clearCoverCache),
-                              child: Text(l10n.cacheClearCovers),
-                            ),
+      appBar: AppBar(title: Text(l10n.cacheTitle)),
+      body: MaxWidthCenter(
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          child: FutureBuilder<_CacheSizes>(
+            future: _sizesFuture,
+            builder: (context, snapshot) {
+              final sizes =
+                  snapshot.data ??
+                  const _CacheSizes(coverCache: 0, imageCache: 0, database: 0);
+              final ready =
+                  snapshot.connectionState == ConnectionState.done &&
+                  !snapshot.hasError;
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Card(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.image_outlined),
+                          title: Text(l10n.cacheCoverCache),
+                          subtitle: ready && sizes.coverCache == 0
+                              ? Text(
+                                  l10n.cacheCoverCacheZeroHint,
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                )
+                              : null,
+                          trailing: Text(
+                            ready
+                                ? _formatBytes(sizes.coverCache)
+                                : l10n.calculatingLabel,
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => _clearAndRefresh(_clearImageCache),
-                              child: Text(l10n.cacheClearImages),
-                            ),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.photo_library_outlined),
+                          title: Text(l10n.cacheImageCache),
+                          subtitle: ready && sizes.imageCache == 0
+                              ? Text(
+                                  l10n.cacheImageCacheZeroHint,
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                )
+                              : null,
+                          trailing: Text(
+                            ready
+                                ? _formatBytes(sizes.imageCache)
+                                : l10n.calculatingLabel,
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton(
-                        onPressed: () => _clearAndRefresh(_clearAllCache),
-                        child: Text(l10n.cacheClearAll),
-                      ),
-                    ],
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.storage_outlined),
+                          title: Text(l10n.cacheDatabase),
+                          trailing: Text(
+                            ready
+                                ? _formatBytes(sizes.database)
+                                : l10n.calculatingLabel,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-              ],
-            );
-          },
+                  const SizedBox(height: 16),
+                  if (ready)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () =>
+                                    _clearAndRefresh(_clearCoverCache),
+                                child: Text(l10n.cacheClearCovers),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () =>
+                                    _clearAndRefresh(_clearImageCache),
+                                child: Text(l10n.cacheClearImages),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton(
+                          onPressed: () => _clearAndRefresh(_clearAllCache),
+                          child: Text(l10n.cacheClearAll),
+                        ),
+                      ],
+                    ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

@@ -18,6 +18,7 @@ import '../providers/repository_provider.dart';
 import '../utils/error_mapper.dart';
 import '../utils/image_download.dart';
 import '../utils/reader_progress.dart';
+import 'reader/paged_reader_view.dart';
 import 'reader/reader_page_image.dart';
 import 'reader/reader_toolbar.dart';
 
@@ -55,6 +56,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   final Map<String, double> _imageAspectRatios = {};
   final Map<String, int> _imageRetryCounts = {};
   final Map<int, ReaderPageVisibility> _visiblePages = {};
+  ReaderMode _readerMode = ReaderMode.scroll;
+  bool _needsScrollJump = false;
 
   @override
   void initState() {
@@ -102,6 +105,19 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     context.replace('/reader/$photoId', extra: initialData);
   }
 
+  void _toggleReaderMode() {
+    final next = _readerMode == ReaderMode.paged
+        ? ReaderMode.scroll
+        : ReaderMode.paged;
+    // 切回滚动模式时 ListView 会从头构建，需要跳回当前页；
+    // 重置尝试次数，避免复用进入章节时已消耗的 resume 额度导致跳页失效。
+    if (next == ReaderMode.scroll) {
+      _needsScrollJump = true;
+      _resumeAttempts = 0;
+    }
+    ref.read(configProvider.notifier).setReaderMode(next);
+  }
+
   ReadingProgress? _findProgress(
     List<ReadingProgress> progressList,
     String photoId,
@@ -124,6 +140,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
   }
 
   void _resumeToIndex(int index) {
+    // 翻页模式由 PagedReaderView 根据 targetIndex 自行跳页。
+    if (_readerMode == ReaderMode.paged) return;
     if (!mounted || !isResumableIndex(index, _imageKeys.length)) return;
 
     final keyContext = _imageKeys[index].currentContext;
@@ -333,9 +351,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
         ? ref.watch(albumDetailProvider(photoAlbumId))
         : null;
     final showAppBar =
-        photoAsync.isLoading ||
+        (photoAsync.isLoading && !photoAsync.hasValue) ||
         photoAsync.hasError ||
-        (albumAsync != null && (albumAsync.isLoading || albumAsync.hasError));
+        (albumAsync != null &&
+            ((albumAsync.isLoading && !albumAsync.hasValue) ||
+                albumAsync.hasError));
     final appBarTitle =
         initialData?.album.title ?? photoAsync.valueOrNull?.title ?? '';
 
@@ -419,6 +439,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     // 以常见竖版漫画宽高比 0.7 做初始估算；图片加载后会用真实比例修正。
     _updateEstimatedItemExtents(photo.imageUrls, screenWidth);
     final preloadCount = ref.read(configProvider).preloadCount;
+    final readerMode = ref.watch(configProvider).readerMode;
+    _readerMode = readerMode;
     final initialData = ReaderInitialData(
       album: album,
       progressList: progressList,
@@ -465,8 +487,65 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
         preloadCount: preloadCount,
         targetImageWidth: targetImageWidth,
       );
+      // 从翻页模式切回滚动模式后，ListView 从头构建，跳回当前页。
+      if (readerMode == ReaderMode.scroll && _needsScrollJump) {
+        _needsScrollJump = false;
+        _resumeToIndex(_currentIndex);
+      }
       if (mounted) _visibilityTick.value += 1;
     });
+
+    final toolbar = ValueListenableBuilder<bool>(
+      valueListenable: _toolbarVisible,
+      builder: (context, showToolbar, child) {
+        return ReaderToolbar(
+          visible: showToolbar,
+          title: photo.title,
+          currentIndex: _currentIndex,
+          pageCount: photo.imageUrls.length,
+          hasFinished: _hasFinished,
+          hasPrevious: hasPrev,
+          hasNext: hasNext,
+          onPrevious: () => _openChapter(prevPhotoId, initialData),
+          onNext: () => _openChapter(nextPhotoId, initialData),
+          album: album,
+          isFavorite: isFavorite,
+          readerMode: readerMode,
+          onToggleReaderMode: _toggleReaderMode,
+        );
+      },
+    );
+
+    if (readerMode == ReaderMode.paged) {
+      return Stack(
+        children: [
+          PagedReaderView(
+            imageUrls: photo.imageUrls,
+            targetIndex: _currentIndex,
+            imageProviderFor: (url) =>
+                ResizeImage(_repo.imageProvider(url), width: targetImageWidth),
+            onPageChanged: (index) =>
+                _setCurrentIndex(index, pageCount: photo.imageUrls.length),
+            onLongPressPage: (url, index) => showImageDownloadSheet(
+              context,
+              ref,
+              url: url,
+              fallbackName: '${widget.photoId}_$index.jpg',
+            ),
+            onToggleToolbar: () =>
+                _toolbarVisible.value = !_toolbarVisible.value,
+            onClearBackoff: () {
+              if (_repo is DirectMangaRepository) {
+                _repo.imageService.clearBackoff();
+              }
+            },
+            loadingMessage: l10n.imageLoading,
+            failedMessage: l10n.imageLoadFailed,
+          ),
+          toolbar,
+        ],
+      );
+    }
 
     return GestureDetector(
       onTap: () => _toolbarVisible.value = !_toolbarVisible.value,
@@ -532,24 +611,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
               },
             ),
           ),
-          ValueListenableBuilder<bool>(
-            valueListenable: _toolbarVisible,
-            builder: (context, showToolbar, child) {
-              return ReaderToolbar(
-                visible: showToolbar,
-                title: photo.title,
-                currentIndex: _currentIndex,
-                pageCount: photo.imageUrls.length,
-                hasFinished: _hasFinished,
-                hasPrevious: hasPrev,
-                hasNext: hasNext,
-                onPrevious: () => _openChapter(prevPhotoId, initialData),
-                onNext: () => _openChapter(nextPhotoId, initialData),
-                album: album,
-                isFavorite: isFavorite,
-              );
-            },
-          ),
+          toolbar,
         ],
       ),
     );

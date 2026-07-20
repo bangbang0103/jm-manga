@@ -12,7 +12,7 @@ export LC_ALL="en_US.UTF-8"
 
 usage() {
   cat <<'EOF'
-Usage: scripts/release.sh [all|mobile|server|apk|ios]
+Usage: scripts/release.sh [all|mobile|server|apk|ios|desktop|macos|windows]
 
 Build release artifacts for the current VERSION.
 
@@ -22,6 +22,9 @@ Targets:
   server   Package server/ into a tar.gz archive.
   apk      Build Android APK only.
   ios      Build unsigned iOS IPA only.
+  desktop  Build the desktop artifact for the current host (macOS or Windows).
+  macos    Build macOS .app zip only. Requires macOS.
+  windows  Build Windows runner zip only. Requires Windows.
 
 Environment:
   APP_NAME=jm-manga                  Mobile artifact prefix. Default: jm-manga
@@ -48,7 +51,7 @@ case "${target}" in
     usage
     exit 0
     ;;
-  all|mobile|server|apk|ios)
+  all|mobile|server|apk|ios|desktop|macos|windows)
     ;;
   *)
     usage >&2
@@ -78,9 +81,9 @@ if [[ "${pubspec_version}" != "${version}" || "${server_version}" != "${version}
   exit 1
 fi
 
-run_mobile() {
-  local mobile_target="$1"
-  "${ROOT_DIR}/scripts/build-flutter.sh" "${mobile_target}"
+run_flutter() {
+  local flutter_target="$1"
+  "${ROOT_DIR}/scripts/build-flutter.sh" "${flutter_target}"
 }
 
 run_server() {
@@ -115,6 +118,12 @@ clean_current_artifacts() {
         "${OUT_ROOT}/${APP_NAME}-unsigned-app-v${version}-ios-*.zip.sha256"
       )
       ;;
+    desktop|macos|windows)
+      patterns+=(
+        "${OUT_ROOT}/${APP_NAME}-desktop-v${version}-*.zip"
+        "${OUT_ROOT}/${APP_NAME}-desktop-v${version}-*.zip.sha256"
+      )
+      ;;
   esac
   if [[ "${target}" == "all" || "${target}" == "server" ]]; then
     patterns+=(
@@ -141,23 +150,26 @@ clean_current_artifacts
 
 case "${target}" in
   all)
-    run_mobile all
+    run_flutter all
     run_server
     ;;
   mobile)
-    run_mobile all
+    run_flutter all
     ;;
   server)
     run_server
     ;;
   apk)
-    run_mobile apk
+    run_flutter apk
     ;;
   ios)
-    run_mobile ios
+    run_flutter ios
+    ;;
+  desktop|macos|windows)
+    run_flutter "${target}"
     ;;
 esac
 
 echo ""
 echo "==> Release artifacts for v${version}:"
-ls -1 "${OUT_ROOT}" | grep -E "(${APP_NAME}-(apk|unsigned-ipa|unsigned-app)-v${version}|${SERVER_APP_NAME}-v${version})[-.]" || true
+ls -1 "${OUT_ROOT}" | grep -E "(${APP_NAME}-(apk|unsigned-ipa|unsigned-app|desktop)-v${version}|${SERVER_APP_NAME}-v${version})[-.]" || true

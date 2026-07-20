@@ -143,15 +143,21 @@ class _PreloadTileState extends ConsumerState<PreloadTile> {
   }
 }
 
-class GridColumnsTile extends ConsumerWidget {
-  final int value;
+class GridDensityTile extends ConsumerWidget {
+  final GridDensity value;
 
-  const GridColumnsTile({super.key, required this.value});
+  const GridDensityTile({super.key, required this.value});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+
+    String labelFor(GridDensity density) => switch (density) {
+      GridDensity.compact => l10n.gridDensityCompact,
+      GridDensity.standard => l10n.gridDensityStandard,
+      GridDensity.loose => l10n.gridDensityLoose,
+    };
 
     return Card(
       child: Padding(
@@ -162,24 +168,24 @@ class GridColumnsTile extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(l10n.gridColumnsTitle, style: theme.textTheme.titleSmall),
-                Text('$value', style: theme.textTheme.titleSmall),
+                Text(l10n.gridDensityTitle, style: theme.textTheme.titleSmall),
+                Text(labelFor(value), style: theme.textTheme.titleSmall),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.gridColumnsSubtitle,
+              l10n.gridDensitySubtitle,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 12),
-            PillSelector<int>(
-              values: const [2, 3, 4],
+            PillSelector<GridDensity>(
+              values: GridDensity.values,
               selected: value,
-              labelFor: (v) => '$v',
-              onSelected: (v) {
-                ref.read(configProvider.notifier).setGridColumns(v);
+              labelFor: labelFor,
+              onSelected: (density) {
+                ref.read(configProvider.notifier).setGridDensity(density);
               },
             ),
           ],

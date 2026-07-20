@@ -2,7 +2,7 @@
 
 # JM Manga Flutter Client
 
-Flutter client for JM Manga. Currently supports Android and iOS only.
+Flutter client for JM Manga. Supports Android, iOS, Windows and macOS.
 
 Common commands:
 

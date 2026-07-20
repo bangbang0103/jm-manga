@@ -7,6 +7,7 @@ import '../providers/config_provider.dart';
 import '../utils/proxy_config.dart';
 import '../utils/top_toast.dart';
 import '../widgets/beta_chip.dart';
+import '../widgets/max_width_center.dart';
 import 'custom_domain/add_domain_dialog.dart';
 import 'custom_domain/domain_row.dart';
 import 'custom_domain/domain_section.dart';
@@ -45,10 +46,7 @@ class _CustomDomainSettingsScreenState
           _apiRows.map((r) => r.url).toList(),
           _savedApiUrls,
         ) ||
-        !_urlListsEqual(
-          _imageRows.map((r) => r.url).toList(),
-          _savedImageUrls,
-        );
+        !_urlListsEqual(_imageRows.map((r) => r.url).toList(), _savedImageUrls);
   }
 
   bool _urlListsEqual(List<String> a, List<String> b) {
@@ -93,7 +91,9 @@ class _CustomDomainSettingsScreenState
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+            ),
             child: Text(l10n.clearAll),
           ),
         ],
@@ -112,14 +112,20 @@ class _CustomDomainSettingsScreenState
       _imageRows.clear();
     });
 
-    await ref.read(configProvider.notifier).setCustomApiDomains(const <String>[]);
+    await ref
+        .read(configProvider.notifier)
+        .setCustomApiDomains(const <String>[]);
     await ref
         .read(configProvider.notifier)
         .setCustomImageDomains(const <String>[]);
 
     if (!mounted) return;
     _updateSavedUrls();
-    TopToast.show(context, l10n.customDomainCleared, type: TopToastType.success);
+    TopToast.show(
+      context,
+      l10n.customDomainCleared,
+      type: TopToastType.success,
+    );
   }
 
   Future<void> _showAddDialog({required bool isApi}) async {
@@ -157,7 +163,9 @@ class _CustomDomainSettingsScreenState
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+            ),
             child: Text(l10n.actionDelete),
           ),
         ],
@@ -246,7 +254,11 @@ class _CustomDomainSettingsScreenState
       await Future.wait(
         allRows.map((row) async {
           try {
-            final latency = await _measureLatency(row.url, proxyUrl, cancelToken);
+            final latency = await _measureLatency(
+              row.url,
+              proxyUrl,
+              cancelToken,
+            );
             if (!mounted) return;
             if (cancelToken?.isCancelled ?? false) return;
             setState(() {
@@ -360,78 +372,80 @@ class _CustomDomainSettingsScreenState
             ],
           ),
         ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _InfoCard(subtitle: l10n.customDomainSubtitle),
-                const SizedBox(height: 20),
-                DomainSection(
-                  label: l10n.customDomainApiLabel,
-                  emptyText: l10n.customDomainEmpty,
-                  icon: Icons.cloud_outlined,
-                  rows: _apiRows,
-                  onAdd: () => _showAddDialog(isApi: true),
-                  onRemove: _removeApiDomain,
-                  onReorder: _reorderApiDomain,
-                  latencyFormatter: (ms) => l10n.customDomainLatency('$ms'),
-                  latencyFailed: l10n.customDomainLatencyFailed,
-                  deleteLabel: l10n.customDomainDelete,
-                ),
-                const SizedBox(height: 20),
-                DomainSection(
-                  label: l10n.customDomainImageLabel,
-                  emptyText: l10n.customDomainEmpty,
-                  icon: Icons.image_outlined,
-                  rows: _imageRows,
-                  onAdd: () => _showAddDialog(isApi: false),
-                  onRemove: _removeImageDomain,
-                  onReorder: _reorderImageDomain,
-                  latencyFormatter: (ms) => l10n.customDomainLatency('$ms'),
-                  latencyFailed: l10n.customDomainLatencyFailed,
-                  deleteLabel: l10n.customDomainDelete,
-                ),
-                const SizedBox(height: 28),
-                if (_testingAll)
-                  OutlinedButton.icon(
-                    onPressed: _stopTest,
-                    icon: const Icon(Icons.stop),
-                    label: Text(l10n.actionStop),
-                  )
-                else
-                  FilledButton.tonalIcon(
-                    onPressed: _testAll,
-                    icon: const Icon(Icons.network_ping_outlined),
-                    label: Text(l10n.customDomainTest),
+        body: MaxWidthCenter(
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _InfoCard(subtitle: l10n.customDomainSubtitle),
+                  const SizedBox(height: 20),
+                  DomainSection(
+                    label: l10n.customDomainApiLabel,
+                    emptyText: l10n.customDomainEmpty,
+                    icon: Icons.cloud_outlined,
+                    rows: _apiRows,
+                    onAdd: () => _showAddDialog(isApi: true),
+                    onRemove: _removeApiDomain,
+                    onReorder: _reorderApiDomain,
+                    latencyFormatter: (ms) => l10n.customDomainLatency('$ms'),
+                    latencyFailed: l10n.customDomainLatencyFailed,
+                    deleteLabel: l10n.customDomainDelete,
                   ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _clear,
-                        icon: const Icon(Icons.delete_outline),
-                        label: Text(l10n.actionClear),
-                      ),
+                  const SizedBox(height: 20),
+                  DomainSection(
+                    label: l10n.customDomainImageLabel,
+                    emptyText: l10n.customDomainEmpty,
+                    icon: Icons.image_outlined,
+                    rows: _imageRows,
+                    onAdd: () => _showAddDialog(isApi: false),
+                    onRemove: _removeImageDomain,
+                    onReorder: _reorderImageDomain,
+                    latencyFormatter: (ms) => l10n.customDomainLatency('$ms'),
+                    latencyFailed: l10n.customDomainLatencyFailed,
+                    deleteLabel: l10n.customDomainDelete,
+                  ),
+                  const SizedBox(height: 28),
+                  if (_testingAll)
+                    OutlinedButton.icon(
+                      onPressed: _stopTest,
+                      icon: const Icon(Icons.stop),
+                      label: Text(l10n.actionStop),
+                    )
+                  else
+                    FilledButton.tonalIcon(
+                      onPressed: _testAll,
+                      icon: const Icon(Icons.network_ping_outlined),
+                      label: Text(l10n.customDomainTest),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _save,
-                        icon: const Icon(Icons.check),
-                        label: Text(l10n.actionSave),
-                      ),
-                    ),
-                  ],
-                ),
-                if (isDirty) ...[
                   const SizedBox(height: 12),
-                  _UnsavedBanner(message: l10n.unsavedChangesHint),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _clear,
+                          icon: const Icon(Icons.delete_outline),
+                          label: Text(l10n.actionClear),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _save,
+                          icon: const Icon(Icons.check),
+                          label: Text(l10n.actionSave),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (isDirty) ...[
+                    const SizedBox(height: 12),
+                    _UnsavedBanner(message: l10n.unsavedChangesHint),
+                  ],
+                  const SizedBox(height: 16),
                 ],
-                const SizedBox(height: 16),
-              ],
+              ),
             ),
           ),
         ),
@@ -458,10 +472,7 @@ class _InfoCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline_rounded,
-            color: scheme.onSurfaceVariant,
-          ),
+          Icon(Icons.info_outline_rounded, color: scheme.onSurfaceVariant),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

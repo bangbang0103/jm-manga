@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jm_manga/l10n/app_localizations.dart';
+import '../widgets/max_width_center.dart';
 
 class FaqScreen extends StatefulWidget {
   const FaqScreen({super.key});
@@ -25,83 +26,90 @@ class _FaqScreenState extends State<FaqScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.faqTitle)),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: l10n.faqSearchHint,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _query.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => setState(() => _query = ''),
-                      )
-                    : null,
-                isDense: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+      body: MaxWidthCenter(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: l10n.faqSearchHint,
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() => _query = ''),
+                        )
+                      : null,
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                onChanged: (value) => setState(() => _query = value),
               ),
-              onChanged: (value) => setState(() => _query = value),
             ),
-          ),
-          Expanded(
-            child: items.isEmpty
-                ? Center(
-                    child: Text(
-                      l10n.faqEmpty,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+            Expanded(
+              child: items.isEmpty
+                  ? Center(
+                      child: Text(
+                        l10n.faqEmpty,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      bottom: 24,
-                    ),
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ExpansionTile(
-                          title: Text(
-                            item.question,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          children: [
-                            Text(
-                              item.answer,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                height: 1.6,
-                                color: theme.colorScheme.onSurfaceVariant,
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 24,
+                      ),
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ExpansionTile(
+                            title: Text(
+                              item.question,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            child: Text(
-              l10n.faqLogHint,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                            childrenPadding: const EdgeInsets.fromLTRB(
+                              16,
+                              0,
+                              16,
+                              16,
+                            ),
+                            children: [
+                              Text(
+                                item.answer,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  height: 1.6,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: Text(
+                l10n.faqLogHint,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

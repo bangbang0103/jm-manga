@@ -1,15 +1,35 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class LocalDatabase {
   static Database? _instance;
+  static bool _ffiInitialized = false;
+
+  /// sqflite 原生插件仅支持 iOS/Android/macOS，Windows/Linux 走 ffi。
+  static bool get _useFfi =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.linux);
 
   static Future<Database> get instance async => _instance ??= await _open();
 
   static Future<Database> _open() async {
-    final databasesPath = await getDatabasesPath();
+    final String databasesPath;
+    if (_useFfi) {
+      if (!_ffiInitialized) {
+        sqfliteFfiInit();
+        databaseFactory = databaseFactoryFfi;
+        _ffiInitialized = true;
+      }
+      // ffi 的默认库目录是进程工作目录，打包后不可控，改用应用支持目录。
+      databasesPath = (await getApplicationSupportDirectory()).path;
+    } else {
+      databasesPath = await getDatabasesPath();
+    }
     final path = join(databasesPath, 'jm_manga.db');
 
     return openDatabase(

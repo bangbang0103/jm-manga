@@ -324,10 +324,7 @@ class _SortSelector extends StatelessWidget {
             return PopupMenuItem(value: slug, child: itemContent(slug));
           }).toList(),
           child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 5,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(14),
@@ -472,25 +469,19 @@ class _RankingGrid extends ConsumerWidget {
 
     final favoriteIdsAsync = ref.watch(favoriteAlbumIdsProvider);
 
-    final gridColumns = ref.watch(configProvider).gridColumns;
+    final gridDensity = ref.watch(configProvider).gridDensity;
     return StaggeredGrid<AlbumItem>(
       items: items,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: gridColumns,
-        childAspectRatio: 2 / 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 16,
-      ),
-      loadingIndicator:
-          hasMore
-              ? const Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-              : null,
+      gridDelegate: coverGridDelegate(gridDensity),
+      loadingIndicator: hasMore
+          ? const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          : null,
       itemBuilder: (context, item, index) {
         final repo = ref.read(apiRepositoryProvider);
         final isFavorite =
@@ -512,11 +503,7 @@ class _RankingGrid extends ConsumerWidget {
                 item: item,
               ),
             ),
-            Positioned(
-              top: 8,
-              left: 8,
-              child: RankingBadge(rank: index + 1),
-            ),
+            Positioned(top: 8, left: 8, child: RankingBadge(rank: index + 1)),
           ],
         );
       },
@@ -547,25 +534,19 @@ class _CategoryGrid extends ConsumerWidget {
 
     final favoriteIdsAsync = ref.watch(favoriteAlbumIdsProvider);
 
-    final gridColumns = ref.watch(configProvider).gridColumns;
+    final gridDensity = ref.watch(configProvider).gridDensity;
     return StaggeredGrid<AlbumItem>(
       items: items,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: gridColumns,
-        childAspectRatio: 2 / 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 16,
-      ),
-      loadingIndicator:
-          hasMore
-              ? const Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-              : null,
+      gridDelegate: coverGridDelegate(gridDensity),
+      loadingIndicator: hasMore
+          ? const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          : null,
       itemBuilder: (context, item, index) {
         final repo = ref.read(apiRepositoryProvider);
         final isFavorite =

@@ -25,7 +25,7 @@ app/
   pubspec.yaml               Flutter 依赖配置
 
 scripts/
-  release.sh                 统一发布构建入口（mobile / server / all）
+  release.sh                 统一发布构建入口（mobile / desktop / server / all）
   build-flutter.sh           Flutter 构建与 sha256 校验
   package-server.sh          将 server/ 已跟踪文件打包为 tar.gz / zip
   sync-version.sh            将根 VERSION 同步到 Flutter 与 server 版本文件
@@ -87,6 +87,7 @@ flutter analyze --fatal-infos
 ./scripts/release.sh mobile    # Android APK + iOS 未签名 IPA
 ./scripts/release.sh apk       # Android APK
 ./scripts/release.sh ios       # iOS app，要求 macOS + Xcode
+./scripts/release.sh desktop   # 当前主机的桌面包（macOS zip / Windows zip）
 ./scripts/release.sh server    # server 部署包
 ```
 

@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/config_provider.dart';
 import '../utils/app_logger.dart';
 import '../widgets/beta_chip.dart';
+import '../widgets/max_width_center.dart';
 
 class SettingsAdvancedScreen extends ConsumerWidget {
   const SettingsAdvancedScreen({super.key});
@@ -99,77 +100,80 @@ class SettingsAdvancedScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.advancedSettingsTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            l10n.advancedSettingsDescription,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+      body: MaxWidthCenter(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(
+              l10n.advancedSettingsDescription,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildSectionCard(
-            context: context,
-            title: l10n.advancedNetworkGroup,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.network_ping_outlined),
-                title: Text(l10n.advancedProxyTitle),
-                subtitle: Text(l10n.advancedProxySubtitle),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/proxy'),
-              ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              ListTile(
-                leading: const Icon(Icons.dns_outlined),
-                title: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(child: Text(l10n.customDomainTitle)),
-                    const SizedBox(width: 8),
-                    const BetaChip(),
-                  ],
+            const SizedBox(height: 16),
+            _buildSectionCard(
+              context: context,
+              title: l10n.advancedNetworkGroup,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.network_ping_outlined),
+                  title: Text(l10n.advancedProxyTitle),
+                  subtitle: Text(l10n.advancedProxySubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/proxy'),
                 ),
-                subtitle: Text(
-                  (config.customApiDomains.isNotEmpty ||
-                          config.customImageDomains.isNotEmpty)
-                      ? l10n.customDomainEnabled
-                      : l10n.customDomainDisabled,
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/settings/custom-domain'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildSectionCard(
-            context: context,
-            title: l10n.advancedDiagnosticsGroup,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.bug_report_outlined),
-                title: Text(l10n.settingsLogLevelTitle),
-                subtitle: Text(l10n.settingsLogLevelSubtitle),
-                trailing: Text(
-                  _levelLabel(l10n, config.logLevel),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.dns_outlined),
+                  title: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(child: Text(l10n.customDomainTitle)),
+                      const SizedBox(width: 8),
+                      const BetaChip(),
+                    ],
                   ),
+                  subtitle: Text(
+                    (config.customApiDomains.isNotEmpty ||
+                            config.customImageDomains.isNotEmpty)
+                        ? l10n.customDomainEnabled
+                        : l10n.customDomainDisabled,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/settings/custom-domain'),
                 ),
-                onTap: () => _showLogLevelSheet(context, ref, config.logLevel),
-              ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              ListTile(
-                leading: const Icon(Icons.article_outlined),
-                title: Text(l10n.advancedViewLogsTitle),
-                subtitle: Text(l10n.advancedViewLogsSubtitle),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/logs'),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSectionCard(
+              context: context,
+              title: l10n.advancedDiagnosticsGroup,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.bug_report_outlined),
+                  title: Text(l10n.settingsLogLevelTitle),
+                  subtitle: Text(l10n.settingsLogLevelSubtitle),
+                  trailing: Text(
+                    _levelLabel(l10n, config.logLevel),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  onTap: () =>
+                      _showLogLevelSheet(context, ref, config.logLevel),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.article_outlined),
+                  title: Text(l10n.advancedViewLogsTitle),
+                  subtitle: Text(l10n.advancedViewLogsSubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/logs'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

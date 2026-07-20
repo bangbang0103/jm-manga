@@ -61,9 +61,12 @@ app/android/app/debug/
 app/android/app/profile/
 app/android/app/release/
 app/linux/
-app/macos/
 app/web/
-app/windows/
+
+# 桌面 runner 已纳入版本管理，仅忽略其生成产物
+app/macos/Flutter/ephemeral/
+app/macos/Pods/
+app/windows/flutter/ephemeral/
 
 # IDE
 .idea/

@@ -357,10 +357,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'Number of images to preload ahead while reading';
 
   @override
-  String get gridColumnsTitle => 'Grid Columns';
+  String get gridDensityTitle => 'Cover Density';
 
   @override
-  String get gridColumnsSubtitle => 'Number of manga covers per row';
+  String get gridDensitySubtitle =>
+      'Preferred cover size; columns adapt to screen width';
+
+  @override
+  String get gridDensityCompact => 'Compact';
+
+  @override
+  String get gridDensityStandard => 'Standard';
+
+  @override
+  String get gridDensityLoose => 'Loose';
+
+  @override
+  String get readerModeScroll => 'Scroll mode';
+
+  @override
+  String get readerModePaged => 'Tap-to-turn mode';
 
   @override
   String get settingsLogLevelTitle => 'Log Level';
