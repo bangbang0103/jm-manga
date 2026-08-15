@@ -1,3 +1,5 @@
+
+
 > 语言：[English](README.en.md) | 中文
 
 # JM Manga
@@ -80,7 +82,7 @@ flutter install
 
 更多文档：
 
-- [架构说明](docs/ARCHITECTURE.md)
+- [架构说明](docs/architecture.md)
 - [移动端打包](docs/building-mobile.md)
 
 ## 站在巨人的肩膀上
