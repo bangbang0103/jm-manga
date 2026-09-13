@@ -33,6 +33,10 @@ String mapErrorToUserMessage(Object error, AppLocalizations l10n) {
     return l10n.errorLocalDataCorrupted;
   }
 
+  if (error is JmNotFoundException) {
+    return l10n.errorContentNotFound;
+  }
+
   if (error is JmApiException) {
     if (error.isLoginRequired) {
       return l10n.errorLoginExpired;

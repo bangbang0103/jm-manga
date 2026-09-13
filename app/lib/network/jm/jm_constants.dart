@@ -4,7 +4,8 @@ class JmConstants {
   static const appTokenSecret = '185Hcomic3PAPP7R';
   static const appTokenSecretForContent = '18comicAPPContent';
   static const appDataSecret = '185Hcomic3PAPP7R';
-  static const appVersion = '2.0.28';
+  // 2026-09-13 实测 /setting 下发的当前版本；jmcomic v2.7.6 内置为 2.1.6。
+  static const appVersion = '2.1.7';
 
   static const scramble220980 = 220980;
   static const scramble268850 = 268850;

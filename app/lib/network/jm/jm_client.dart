@@ -514,6 +514,11 @@ class JmClient {
           throw JmApiException(code: code, message: message);
         }
         final encodedData = envelope['data'];
+        if (encodedData is List) {
+          // JM 对不存在/已下架的本子或章节返回 data: []（code 仍为 200）。
+          // 这是确定性结果，跨域名重试无意义，直接抛出让 UI 明确提示。
+          throw const JmNotFoundException();
+        }
         if (encodedData is! String) {
           throw FormatException('JM API response is missing encrypted data');
         }
@@ -621,6 +626,16 @@ class JmApiException implements Exception {
 
   @override
   String toString() => 'JmApiException($code): $message';
+}
+
+/// 请求的资源不存在或已下架（JM 返回 code=200 但 data 为 []）。
+///
+/// 与网络/解析错误不同，这是服务端的确定性应答，不应重试或切换域名。
+class JmNotFoundException implements Exception {
+  const JmNotFoundException();
+
+  @override
+  String toString() => 'JmNotFoundException: resource not found or removed';
 }
 
 /// 域名更新失败时抛出，便于上层区分是网络问题还是 JM API 业务错误。

@@ -614,11 +614,29 @@ abstract class AppLocalizations {
   /// **'Hide replies'**
   String get commentHideReplies;
 
-  /// No description provided for @jumpToHint.
+  /// No description provided for @commentSpoiler.
   ///
   /// In en, this message translates to:
-  /// **'Jump to'**
-  String get jumpToHint;
+  /// **'Spoiler'**
+  String get commentSpoiler;
+
+  /// No description provided for @commentSpoilerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to reveal spoiler'**
+  String get commentSpoilerHint;
+
+  /// No description provided for @chaptersSortAscending.
+  ///
+  /// In en, this message translates to:
+  /// **'Ascending'**
+  String get chaptersSortAscending;
+
+  /// No description provided for @chaptersSortDescending.
+  ///
+  /// In en, this message translates to:
+  /// **'Descending'**
+  String get chaptersSortDescending;
 
   /// No description provided for @chapterTitle.
   ///
@@ -1027,6 +1045,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data source returned an unexpected response.'**
   String get errorServerResponse;
+
+  /// No description provided for @errorContentNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Content is unavailable or has been removed.'**
+  String get errorContentNotFound;
 
   /// No description provided for @errorLoginExpired.
   ///

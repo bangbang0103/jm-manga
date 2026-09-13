@@ -223,6 +223,29 @@ void main() {
       );
     });
 
+    test(
+      'album with data as empty list throws JmNotFoundException without retry',
+      () async {
+        // JM 对不存在/已下架的资源返回 {"code": 200, "data": []}。
+        // 属于确定性结果，应立即失败且不切域名重试。
+        final adapter = _RawBodyAdapter('{"code": 200, "data": []}');
+        final client = JmClient(
+          dio: Dio()..httpClientAdapter = adapter,
+          domains: const JmDomainConfig(
+            apiDomains: ['api1.example.test', 'api2.example.test'],
+          ),
+          timestampProvider: () => 1700566805,
+          autoUpdateDomains: false,
+        );
+
+        await expectLater(
+          client.getAlbum('99999999'),
+          throwsA(isA<JmNotFoundException>()),
+        );
+        expect(adapter.calls, 1);
+      },
+    );
+
     test('debug response logs redact sensitive fields', () async {
       globalLogger.clear();
       final adapter = _RawBodyAdapter(
@@ -403,6 +426,7 @@ class _SequentialScramblePageAdapter implements HttpClientAdapter {
 /// 返回原始 JSON 文本的 adapter，用于验证响应体日志的脱敏与截断。
 class _RawBodyAdapter implements HttpClientAdapter {
   final String body;
+  int calls = 0;
 
   _RawBodyAdapter(this.body);
 
@@ -412,6 +436,7 @@ class _RawBodyAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    calls += 1;
     return ResponseBody.fromString(
       body,
       200,

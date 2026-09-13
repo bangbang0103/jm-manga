@@ -286,7 +286,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commentHideReplies => 'Hide replies';
 
   @override
-  String get jumpToHint => 'Jump to';
+  String get commentSpoiler => 'Spoiler';
+
+  @override
+  String get commentSpoilerHint => 'Tap to reveal spoiler';
+
+  @override
+  String get chaptersSortAscending => 'Ascending';
+
+  @override
+  String get chaptersSortDescending => 'Descending';
 
   @override
   String chapterTitle(Object number) {
@@ -510,6 +519,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorServerResponse =>
       'Data source returned an unexpected response.';
+
+  @override
+  String get errorContentNotFound =>
+      'Content is unavailable or has been removed.';
 
   @override
   String get errorLoginExpired => 'Session expired. Please log in again.';

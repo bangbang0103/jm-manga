@@ -102,6 +102,13 @@ void main() {
       },
     );
 
+    test('maps JmNotFoundException to content not found', () {
+      expect(
+        mapErrorToUserMessage(const JmNotFoundException(), l10n),
+        contains('unavailable or has been removed'),
+      );
+    });
+
     test('maps unknown error to generic error', () {
       expect(
         mapErrorToUserMessage(Exception('x'), l10n),

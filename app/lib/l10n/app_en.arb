@@ -135,7 +135,10 @@
   "commentsNoMore": "No more comments",
   "commentReplies": "View {count} replies",
   "commentHideReplies": "Hide replies",
-  "jumpToHint": "Jump to",
+  "commentSpoiler": "Spoiler",
+  "commentSpoilerHint": "Tap to reveal spoiler",
+  "chaptersSortAscending": "Ascending",
+  "chaptersSortDescending": "Descending",
   "chapterTitle": "Chapter {number}",
   "@chapterTitle": {
     "placeholders": {
@@ -236,6 +239,7 @@
   "copiedToClipboard": "Copied to clipboard",
   "errorNetworkUnavailable": "Network unavailable. Please check your connection or proxy settings.",
   "errorServerResponse": "Data source returned an unexpected response.",
+  "errorContentNotFound": "Content is unavailable or has been removed.",
   "errorLoginExpired": "Session expired. Please log in again.",
   "errorLocalDataCorrupted": "Local data is corrupted.",
   "errorGeneric": "Something went wrong. Please try again later.",

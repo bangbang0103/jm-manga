@@ -285,7 +285,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commentHideReplies => '收起回复';
 
   @override
-  String get jumpToHint => '跳转至';
+  String get commentSpoiler => '剧透';
+
+  @override
+  String get commentSpoilerHint => '点击查看剧透内容';
+
+  @override
+  String get chaptersSortAscending => '正序';
+
+  @override
+  String get chaptersSortDescending => '倒序';
 
   @override
   String chapterTitle(Object number) {
@@ -502,6 +511,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get errorServerResponse => '数据源响应异常。';
+
+  @override
+  String get errorContentNotFound => '内容不存在或已下架。';
 
   @override
   String get errorLoginExpired => '登录已失效，请重新登录。';
