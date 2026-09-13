@@ -5,21 +5,19 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION_FILE="${ROOT_DIR}/VERSION"
 OUT_ROOT="${OUT_ROOT:-${ROOT_DIR}/build}"
 APP_NAME="${APP_NAME:-jm-manga}"
-SERVER_APP_NAME="${SERVER_APP_NAME:-jm-manga-server}"
 
 export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
 
 usage() {
   cat <<'EOF'
-Usage: scripts/release.sh [all|mobile|server|apk|ios|desktop|macos|windows]
+Usage: scripts/release.sh [all|mobile|apk|ios|desktop|macos|windows]
 
 Build release artifacts for the current VERSION.
 
 Targets:
-  all      Build mobile (APK + iOS) and server package. Default.
+  all      Build mobile (APK + iOS). Default.
   mobile   Build mobile only (APK + iOS).
-  server   Package server/ into a tar.gz archive.
   apk      Build Android APK only.
   ios      Build unsigned iOS IPA only.
   desktop  Build the desktop artifact for the current host (macOS or Windows).
@@ -28,7 +26,6 @@ Targets:
 
 Environment:
   APP_NAME=jm-manga                  Mobile artifact prefix. Default: jm-manga
-  SERVER_APP_NAME=jm-manga-server    Server artifact prefix. Default: jm-manga-server
   BUILD_MODE=release|debug|profile   Flutter build mode. Default: release
   IOS_EXPORT=unsigned-ipa|unsigned-app  iOS output kind. Default: unsigned-ipa
   OUT_ROOT=/path/to/output           Output root. Default: build
@@ -51,7 +48,7 @@ case "${target}" in
     usage
     exit 0
     ;;
-  all|mobile|server|apk|ios|desktop|macos|windows)
+  all|mobile|apk|ios|desktop|macos|windows)
     ;;
   *)
     usage >&2
@@ -74,9 +71,8 @@ fi
 
 pubspec_version="$(awk '/^version:/ {print $2; exit}' "${ROOT_DIR}/app/pubspec.yaml")"
 pubspec_version="${pubspec_version%%+*}"
-server_version="$(awk -F'"' '/^version = "/ {print $2; exit}' "${ROOT_DIR}/server/pyproject.toml")"
-if [[ "${pubspec_version}" != "${version}" || "${server_version}" != "${version}" ]]; then
-  echo "Version mismatch: VERSION=${version}, app/pubspec.yaml=${pubspec_version}, server/pyproject.toml=${server_version}" >&2
+if [[ "${pubspec_version}" != "${version}" ]]; then
+  echo "Version mismatch: VERSION=${version}, app/pubspec.yaml=${pubspec_version}" >&2
   echo "Run scripts/sync-version.sh first, then re-run this script." >&2
   exit 1
 fi
@@ -84,10 +80,6 @@ fi
 run_flutter() {
   local flutter_target="$1"
   "${ROOT_DIR}/scripts/build-flutter.sh" "${flutter_target}"
-}
-
-run_server() {
-  "${ROOT_DIR}/scripts/package-server.sh" tar.gz
 }
 
 # Clean current-version artifacts so stale files are not left behind.
@@ -125,12 +117,6 @@ clean_current_artifacts() {
       )
       ;;
   esac
-  if [[ "${target}" == "all" || "${target}" == "server" ]]; then
-    patterns+=(
-      "${OUT_ROOT}/${SERVER_APP_NAME}-v${version}.tar.gz"
-      "${OUT_ROOT}/${SERVER_APP_NAME}-v${version}.tar.gz.sha256"
-    )
-  fi
 
   local any=0
   # Empty IFS disables word splitting so paths with spaces expand as one
@@ -151,13 +137,9 @@ clean_current_artifacts
 case "${target}" in
   all)
     run_flutter all
-    run_server
     ;;
   mobile)
     run_flutter all
-    ;;
-  server)
-    run_server
     ;;
   apk)
     run_flutter apk
@@ -172,4 +154,4 @@ esac
 
 echo ""
 echo "==> Release artifacts for v${version}:"
-ls -1 "${OUT_ROOT}" | grep -E "(${APP_NAME}-(apk|unsigned-ipa|unsigned-app|desktop)-v${version}|${SERVER_APP_NAME}-v${version})[-.]" || true
+ls -1 "${OUT_ROOT}" | grep -E "${APP_NAME}-(apk|unsigned-ipa|unsigned-app|desktop)-v${version}[-.]" || true

@@ -2,11 +2,10 @@
 
 ## 项目概况
 
-这是一个个人使用的漫画阅读 App，支持 iOS、Android、Windows 与 macOS。
+这是一个个人使用的漫画阅读 App，支持 iOS 与 Android；Windows / macOS 桌面端处于 Alpha 阶段。
 
 - `app/`：Flutter 客户端，Riverpod 状态管理，dio 请求数据源接口。
-- `server/`：可选自托管加速服务（FastAPI + jmcomic）。
-- `scripts/`：移动端、桌面端与 server 的构建/打包脚本。
+- `scripts/`：移动端与桌面端的构建/打包脚本。
 - `docs/`：架构、打包、开发指南和接口探测文档。
 
 ## 工作原则
@@ -29,7 +28,6 @@ flutter test
 ```bash
 bash -n scripts/release.sh
 bash -n scripts/build-flutter.sh
-bash -n scripts/package-server.sh
 bash -n scripts/sync-version.sh
 bash -n scripts/test-flutter.sh
 ```

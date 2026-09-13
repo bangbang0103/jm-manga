@@ -2,10 +2,9 @@
 
 ## 总览
 
-JM Manga 是个人使用的 JM 漫画阅读应用，支持 iOS、Android、Windows 与 macOS。
+JM Manga 是个人使用的 JM 漫画阅读应用，支持 iOS 与 Android；Windows 与 macOS 桌面端处于 Alpha 阶段。
 
 - **前端**：Flutter 客户端直接请求数据源接口与图片服务。
-- **可选自托管加速服务（BETA）**：`server/` 目录下是一个基于 FastAPI + jmcomic 的 Python 服务。用户可将其部署在 VPS/NAS/本地，然后在 Flutter 客户端的「自定义域名（BETA）」中把 API 域名与图片域名指向该服务，以获得缓存、线路优化等加速能力。该服务完全可选，不启用时 Flutter 客户端仍直连官方。
 - **本地存储**：`SecureStorage` 保存账号凭据和会话凭证；SQLite 保存收藏与阅读进度；SharedPreferences 保存代理、日志级别、主题、语言、搜索历史、图片缓存 LRU 元数据等非敏感配置。
 - **发布**：移动端构建 APK 与未签名 IPA，桌面端构建 Windows/macOS zip（ad-hoc 签名），安装即可使用。
 
@@ -87,11 +86,12 @@ JM Manga 是个人使用的 JM 漫画阅读应用，支持 iOS、Android、Windo
 - 检测失败时自动检测静默；手动点击版本号失败时通过 `TopToast` 提示。
 - 检测到新版本后点击进入详情页，展示 release notes 并提供“立即下载”按钮跳转 GitHub Release 页面。
 
-## 自定义域名（BETA）
+## 自定义域名（BETA，入口已隐藏）
 
-> 该功能仍处于 BETA 阶段，接口与行为可能随版本调整。
+> 该功能处于 BETA 阶段。配套的自托管加速服务已于 v0.2.5 移除，设置页入口同时隐藏；
+> 底层配置能力保留，已设置过自定义域名的用户配置仍然生效。
 
-- 用户在 `Settings → Advanced → Custom Domain (BETA)` 中分别设置多个 API 域名与图片域名，每行一个。
+- 用户原在 `Settings → Advanced → Custom Domain (BETA)` 中分别设置多个 API 域名与图片域名，每行一个；页面路由 `/settings/custom-domain` 保留，仅入口 ListTile 被移除。
 - 输入支持域名、`IP:port` 或完整 URL；缺失 scheme 时自动补全 `https://`。
 - 配置以 JSON 列表持久化到 `SharedPreferences`，通过 `configProvider` 注入 `JmClient`。
 - `JmClient` 按输入顺序将所有自定义域名主机排在域名列表前部，依次优先尝试；失败时按原有机制回退到自动更新或内置域名。
@@ -115,27 +115,3 @@ JM Manga 是个人使用的 JM 漫画阅读应用，支持 iOS、Android、Windo
 ## 数据目录
 
 默认持久数据位于应用私有目录，不放在 `build/` 或 release 目录内，避免清理构建产物时误删。
-
-## 可选自托管加速服务
-
-`server/` 提供可选的独立后端服务，用于加速 Flutter 客户端对 JM 官方接口与图片 CDN 的访问。
-
-- **技术栈**：Python 3.11+、FastAPI、uvicorn、jmcomic（async client）、uv。
-- **部署形态**：用户自托管（VPS/NAS/本地），提供 `Dockerfile`、`docker-compose.yml` 与裸 Python 启动脚本 `run.sh`。
-- **接入方式**：Flutter 客户端通过现有的「自定义域名（BETA）」功能，将 API 域名与图片域名同时指向 server。Flutter 侧无需任何代码改动。
-- **接口兼容**：
-  - API 路由完全按官方路径映射（`/search`、`/album`、`/chapter`、`/categories/filter`、`/favorite`、`/login` 等）。
-  - `/chapter_view_template` 透传原始 HTML，供 Flutter 提取 `scramble_id`。
-  - 图片路由完全按官方 CDN 路径映射（`/media/albums/...`、`/media/photos/...`）。
-- **内部实现**：
-  - API 请求由 jmcomic `AsyncJmApiClient` 重放；返回数据用 Flutter 客户端的 timestamp 重新加密，使 Flutter 端可以正常解密。
-  - 图片请求透明回源 JM CDN，不解码，直接返回原始字节。
-  - Cookie 由 Flutter 客户端透传；server 不保存用户密码，也不共享 jmcomic session。每个 API / login / scramble 请求都会从基础配置深拷贝出独立的 jmcomic client 并注入当前请求的 Cookie，避免请求间串号。图片下载使用独立的 `aiohttp.ClientSession` 复用连接。
-  - `/login` 由 server 代为登录后将 `Set-Cookie` 返回给 App。
-- **缓存策略**：
-  - API 响应做 60s 内存 LRU 缓存；`/favorite`、`/login` 等有状态接口不缓存。
-  - 图片做磁盘 LRU 缓存，默认上限 50GB，缓存键忽略 `scramble_id` query 参数。
-- **配置**：`config.yml` 与环境变量（前缀 `JM_SERVER_`）均可；详情见 `server/README.zh.md`。
-  - 新增 `public_base_url`：用于 `/chapter_view_template` 中 `imghost` 的改写，方便反代场景。未配置时会依次尝试 `X-Forwarded-Proto` / `X-Forwarded-Host`、`Forwarded` header，最后回退到请求自身的 scheme 与 Host。
-  - Docker 构建已固定 uv 版本并复制 `uv.lock` 安装，保证依赖可复现。
-- **测试**：`server/tests/` 包含单元测试与基于 mock jmcomic client 的集成测试，运行 `uv run pytest`。

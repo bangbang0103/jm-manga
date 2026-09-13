@@ -4,7 +4,7 @@
 
 <img src="docs/assets/icon.png" alt="JM Manga icon" width="120">
 
-一个简洁的 iOS / Android / Windows / macOS 漫画阅读应用。本项目仅供个人学习和技术研究使用。
+一个简洁的 iOS / Android 漫画阅读应用，Windows / macOS 桌面端处于 Alpha 阶段。本项目仅供个人学习和技术研究使用。
 
 > **免责声明**：本项目仅供个人学习和技术研究使用，不存储、不传播任何受版权保护的内容。应用内展示的所有数据均来自第三方公开接口，版权归原作者所有。请遵守当地法律法规，禁止将本项目用于任何商业或非法用途。
 
@@ -75,9 +75,9 @@ flutter install
 
 也可以构建未签名 IPA（`flutter build ipa --no-codesign`），再通过 Sideloadly 或其他你信任的工具签名安装。
 
-### Windows / macOS
+### Windows / macOS（Alpha）
 
-桌面端 zip 解压即用：
+桌面端 zip 解压即用（Alpha 阶段，界面与交互仍在打磨）：
 
 - Windows：解压后运行 `jm_manga.exe`。
 - macOS：解压得到 `JM Manga.app`。包为 ad-hoc 签名、未经 Apple 公证，首次打开如被 Gatekeeper 拦截，在 Finder 中右键 → 打开即可。

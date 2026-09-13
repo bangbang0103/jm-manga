@@ -23,7 +23,7 @@ dist/
 .ruff_cache/
 
 # Release artifacts
-# Top-level output dir of scripts/release.sh and scripts/package-server.sh.
+# Top-level output dir of scripts/release.sh.
 # Nested build dirs (e.g. app/build/) stay covered by their own rules below.
 build/
 
@@ -40,10 +40,6 @@ opencode.json
 *.db
 *.sqlite
 *.sqlite3
-
-# Server runtime data
-server/cache/
-server/logs/
 
 # Local image cache at repository root
 /cache/

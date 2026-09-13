@@ -16,8 +16,6 @@ if [[ ! "${version}" =~ ^[0-9]+[.][0-9]+[.][0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
 fi
 
 pubspec="${ROOT_DIR}/app/pubspec.yaml"
-server_pyproject="${ROOT_DIR}/server/pyproject.toml"
-server_uv_lock="${ROOT_DIR}/server/uv.lock"
 
 export JM_MANGA_VERSION="${version}"
 
@@ -25,18 +23,5 @@ LC_ALL=C LC_CTYPE=C LANG=C perl -0pi -e \
   's/^version: .+$/version: $ENV{JM_MANGA_VERSION}/m' \
   "${pubspec}"
 
-if [[ -f "${server_pyproject}" ]]; then
-  LC_ALL=C LC_CTYPE=C LANG=C perl -0pi -e \
-    's/^version = "[^"]+"$/version = "$ENV{JM_MANGA_VERSION}"/m' \
-    "${server_pyproject}"
-fi
-
-if [[ -f "${server_uv_lock}" ]]; then
-  LC_ALL=C LC_CTYPE=C LANG=C perl -0pi -e \
-    's/(\[\[package\]\]\nname = "jm-manga-server"\nversion = ")[^"]+(")/$1$ENV{JM_MANGA_VERSION}$2/s' \
-    "${server_uv_lock}"
-fi
-
 echo "Synced version ${JM_MANGA_VERSION}"
 echo "Flutter version ${JM_MANGA_VERSION}"
-echo "Server version ${JM_MANGA_VERSION}"

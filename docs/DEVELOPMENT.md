@@ -25,10 +25,9 @@ app/
   pubspec.yaml               Flutter 依赖配置
 
 scripts/
-  release.sh                 统一发布构建入口（mobile / desktop / server / all）
+  release.sh                 统一发布构建入口（mobile / desktop / all）
   build-flutter.sh           Flutter 构建与 sha256 校验
-  package-server.sh          将 server/ 已跟踪文件打包为 tar.gz / zip
-  sync-version.sh            将根 VERSION 同步到 Flutter 与 server 版本文件
+  sync-version.sh            将根 VERSION 同步到 Flutter 版本文件
   test-flutter.sh            运行 Flutter 测试（自动设置 NO_PROXY）
 
 docs/
@@ -63,7 +62,7 @@ flutter run
 ./scripts/sync-version.sh
 ```
 
-该脚本会同步 `app/pubspec.yaml` 的版本号（保留 `+<build-number>`），并同步 `server/pyproject.toml` 与 `server/uv.lock` 中的 server 包版本。
+该脚本会同步 `app/pubspec.yaml` 的版本号（保留 `+<build-number>`）。
 
 ## 代码检查
 
@@ -83,12 +82,11 @@ flutter analyze --fatal-infos
 ## 发布构建
 
 ```bash
-./scripts/release.sh all       # 移动端 + server 包
-./scripts/release.sh mobile    # Android APK + iOS 未签名 IPA
+./scripts/release.sh all       # 移动端（Android APK + iOS 未签名 IPA）
+./scripts/release.sh mobile    # 同上
 ./scripts/release.sh apk       # Android APK
 ./scripts/release.sh ios       # iOS app，要求 macOS + Xcode
 ./scripts/release.sh desktop   # 当前主机的桌面包（macOS zip / Windows zip）
-./scripts/release.sh server    # server 部署包
 ```
 
 构建产物命名示例：
@@ -96,28 +94,9 @@ flutter analyze --fatal-infos
 ```text
 build/jm-manga-apk-v0.1.0+1-android-release.apk
 build/jm-manga-unsigned-ipa-v0.1.0+1-ios-release.ipa
-build/jm-manga-server-v0.2.1.tar.gz
 ```
 
 每个产物旁边会生成 `.sha256` 校验文件。
-
-## 打包 server
-
-```bash
-./scripts/package-server.sh        # 默认输出 tar.gz
-./scripts/package-server.sh zip    # 输出 zip
-```
-
-产物示例：
-
-```text
-build/jm-manga-server-v0.2.2.tar.gz
-build/jm-manga-server-v0.2.2.tar.gz.sha256
-```
-
-该脚本基于 `git archive`，只包含已跟踪文件，自动排除 `.venv`、`__pycache__`、`cache/`、`logs/`、`.env` 等本地运行时数据。
-
-服务端部署与配置的详细说明见 `server/README.zh.md`。
 
 ## 接口探测
 

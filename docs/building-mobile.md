@@ -20,7 +20,7 @@
 # 当前主机的桌面包（macOS 上构建 .app zip，Windows 上构建 runner zip）
 ./scripts/release.sh desktop
 
-# 全部产物：移动端 + server 包
+# 全部产物：移动端
 ./scripts/release.sh all
 ```
 
@@ -140,7 +140,7 @@ CODESIGN_IDENTITY="Apple Development: you@example.com (TEAMID)" ./scripts/releas
 ./scripts/sync-version.sh
 ```
 
-脚本会把版本同步到 `app/pubspec.yaml`，格式为 `<VERSION>+<build-number>`，并同步 server 包版本文件，保持仓库版本源一致。
+脚本会把版本同步到 `app/pubspec.yaml`，格式为 `<VERSION>+<build-number>`，保持仓库版本源一致。
 
 ## 校验文件
 

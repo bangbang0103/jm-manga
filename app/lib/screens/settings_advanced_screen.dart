@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/config_provider.dart';
 import '../utils/app_logger.dart';
-import '../widgets/beta_chip.dart';
 import '../widgets/max_width_center.dart';
 
 class SettingsAdvancedScreen extends ConsumerWidget {
@@ -122,26 +121,8 @@ class SettingsAdvancedScreen extends ConsumerWidget {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/proxy'),
                 ),
-                const Divider(height: 1, indent: 16, endIndent: 16),
-                ListTile(
-                  leading: const Icon(Icons.dns_outlined),
-                  title: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(child: Text(l10n.customDomainTitle)),
-                      const SizedBox(width: 8),
-                      const BetaChip(),
-                    ],
-                  ),
-                  subtitle: Text(
-                    (config.customApiDomains.isNotEmpty ||
-                            config.customImageDomains.isNotEmpty)
-                        ? l10n.customDomainEnabled
-                        : l10n.customDomainDisabled,
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/settings/custom-domain'),
-                ),
+                // 自定义域名（BETA）入口已随自托管加速服务的移除而隐藏；
+                // 底层配置能力保留，已设置过自定义域名的老用户不受影响。
               ],
             ),
             const SizedBox(height: 16),

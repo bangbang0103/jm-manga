@@ -4,7 +4,7 @@
 
 <img src="docs/assets/icon.png" alt="JM Manga icon" width="120">
 
-A simple manga reader app for iOS, Android, Windows and macOS. This project is built for personal learning and research purposes only.
+A simple manga reader app for iOS and Android, with Windows / macOS desktop builds in Alpha. This project is built for personal learning and research purposes only.
 
 > **Disclaimer**: This project is for personal learning and research only. It does not store or distribute any copyrighted content. All content displayed inside the app comes from third-party public interfaces, and the copyright belongs to the original authors. Please comply with your local laws and regulations. Commercial or illegal use is strictly prohibited.
 
@@ -75,9 +75,9 @@ flutter install
 
 Alternatively, you can build an unsigned IPA (`flutter build ipa --no-codesign`) and sign it with Sideloadly or other tools you trust.
 
-### Windows / macOS
+### Windows / macOS (Alpha)
 
-The desktop zips are portable — extract and run:
+The desktop zips are portable — extract and run (Alpha stage; layout and interactions are still being polished):
 
 - Windows: extract the zip and run `jm_manga.exe`.
 - macOS: extract the zip to get `JM Manga.app`. The app is ad-hoc signed and not notarized; if Gatekeeper blocks the first launch, right-click the app in Finder and choose **Open**.
