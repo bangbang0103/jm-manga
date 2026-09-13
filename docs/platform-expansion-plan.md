@@ -23,7 +23,7 @@
 - **条件导入**：已有 `_stub/_io` 模式覆盖 `http_overrides`、`proxy_config`、`app_log_storage`、`jm_image_service`、`image_cache_cleanup`，桌面天然走 `_io` 分支。
 - **Runner**：`app/windows|macos|web|linux/` 本地存在但被根 `.gitignore`（第 63–66 行）忽略，属未维护残留。残留 macOS runner 的 entitlements 已含 `com.apple.security.network.client` 与 `keychain-access-groups`（bundle 前缀 `com.jmmanga.app`）。
 - **sqflite**：`local/local_database.dart`、`local/local_manga_records.dart` 直连 sqflite，桌面需切 `databaseFactoryFfi`；`sqflite_common_ffi` 已在 dev_dependencies（测试用）。
-- **脚本**：`scripts/build-flutter.sh`（apk|ios|all，产物 + sha256）、`scripts/release.sh`（版本一致性校验 + 清理 + 汇总）、`scripts/sync-version.sh`（VERSION → pubspec/server）。无 CI（`.github/workflows/` 不存在）。
+- **脚本**：`scripts/build-flutter.sh`（apk|ios|all，产物 + sha256）、`scripts/release.sh`（版本一致性校验 + 清理 + 汇总）、`scripts/sync-version.sh`（VERSION → pubspec）。无 CI（`.github/workflows/` 不存在）。
 - **导航**：`main_screen.dart` 为手写 IndexedStack + BottomNavigationBar（4 tab，无 router shell）。
 
 ## 改动清单
