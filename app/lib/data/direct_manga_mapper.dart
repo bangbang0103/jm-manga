@@ -72,6 +72,7 @@ Comment _commentFromJm(JmComment item, {required String Function(String) coverUr
     likes: item.likes,
     addTime: item.addTime,
     photo: item.photo,
+    isSpoiler: item.isSpoiler,
     replies:
         item.replies.map((reply) => _commentReplyFromJm(reply)).toList(),
   );
@@ -88,6 +89,7 @@ CommentReply _commentReplyFromJm(JmComment item) {
     likes: item.likes,
     addTime: item.addTime,
     photo: item.photo,
+    isSpoiler: item.isSpoiler,
     parentId: '',
   );
 }

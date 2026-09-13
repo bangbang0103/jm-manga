@@ -56,6 +56,48 @@ void main() {
       expect(find.text('Album Title 12345'), findsWidgets);
     });
 
+    testWidgets('AlbumDetailScreen toggles chapter sort order', (
+      WidgetTester tester,
+    ) async {
+      final album = AlbumDetail(
+        albumId: '12345',
+        title: 'Album Title 12345',
+        description: 'Description',
+        author: 'Author',
+        tags: const [],
+        episodes: [
+          {'photo_id': 'ep1', 'title': 'Chapter 1', 'index': 1},
+          {'photo_id': 'ep2', 'title': 'Chapter 2', 'index': 2},
+          {'photo_id': 'ep3', 'title': 'Chapter 3', 'index': 3},
+        ],
+        isFavorite: false,
+      );
+
+      await tester.pumpWidget(
+        testable(
+          const AlbumDetailScreen(albumId: '12345'),
+          locale: const Locale('zh'),
+          overrides: [
+            albumDetailProvider.overrideWith((ref, albumId) async => album),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 默认正序：首个可见章节是 Chapter 1，按钮显示「正序」。
+      expect(find.text('正序'), findsOneWidget);
+      expect(find.text('Chapter 1'), findsOneWidget);
+      expect(find.text('Chapter 3'), findsNothing);
+
+      await tester.tap(find.text('正序'));
+      await tester.pumpAndSettle();
+
+      // 倒序并回到顶部：首个可见章节变为 Chapter 3，按钮显示「倒序」。
+      expect(find.text('倒序'), findsOneWidget);
+      expect(find.text('Chapter 3'), findsOneWidget);
+      expect(find.text('Chapter 1'), findsNothing);
+    });
+
     testWidgets('AlbumDetailScreen does not stack app bars during refresh', (
       WidgetTester tester,
     ) async {

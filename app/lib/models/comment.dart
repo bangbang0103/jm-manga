@@ -9,6 +9,7 @@ class Comment {
   final String likes;
   final String addTime;
   final String? photo;
+  final bool isSpoiler;
   final List<CommentReply> replies;
 
   const Comment({
@@ -21,6 +22,7 @@ class Comment {
     required this.likes,
     required this.addTime,
     this.photo,
+    this.isSpoiler = false,
     this.replies = const [],
   });
 }
@@ -36,6 +38,7 @@ class CommentReply {
   final String likes;
   final String addTime;
   final String? photo;
+  final bool isSpoiler;
   final String parentId;
 
   const CommentReply({
@@ -48,6 +51,7 @@ class CommentReply {
     required this.likes,
     required this.addTime,
     this.photo,
+    this.isSpoiler = false,
     required this.parentId,
   });
 }

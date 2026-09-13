@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
@@ -74,8 +76,9 @@ class _CommentItemState extends State<CommentItem> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  stripHtmlTags(comment.content),
+                _SpoilerContent(
+                  text: stripHtmlTags(comment.content),
+                  isSpoiler: comment.isSpoiler,
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 6),
@@ -88,18 +91,22 @@ class _CommentItemState extends State<CommentItem> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Icon(
-                      Icons.thumb_up_outlined,
-                      size: 14,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      comment.likes,
-                      style: theme.textTheme.bodySmall?.copyWith(
+                    // 2026-09 起 JM 服务端对所有评论返回 likes="0"，
+                    // 赞数为 0 时隐藏点赞图标，避免误导。
+                    if (comment.likes != '0') ...[
+                      Icon(
+                        Icons.thumb_up_outlined,
+                        size: 14,
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      Text(
+                        comment.likes,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 if (comment.replies.isNotEmpty) ...[
@@ -175,6 +182,64 @@ String _localAvatarPath(String uid) {
   final index = uid.hashCode.abs() % count + 1;
   final name = index.toString().padLeft(2, '0');
   return 'assets/images/avatar/avatar_$name.png';
+}
+
+/// 评论正文。剧透评论默认以毛玻璃模糊遮罩，点击后揭示内容。
+class _SpoilerContent extends StatefulWidget {
+  final String text;
+  final bool isSpoiler;
+  final TextStyle? style;
+
+  const _SpoilerContent({
+    required this.text,
+    required this.isSpoiler,
+    this.style,
+  });
+
+  @override
+  State<_SpoilerContent> createState() => _SpoilerContentState();
+}
+
+class _SpoilerContentState extends State<_SpoilerContent> {
+  bool _revealed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isSpoiler || _revealed) {
+      return Text(widget.text, style: widget.style);
+    }
+
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    return Semantics(
+      button: true,
+      label: '${l10n.commentSpoiler} · ${l10n.commentSpoilerHint}',
+      child: GestureDetector(
+        onTap: () => setState(() => _revealed = true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRect(
+              child: ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                // 模糊后禁止子树命中测试，统一由外层 GestureDetector 响应。
+                child: IgnorePointer(
+                  child: Text(widget.text, style: widget.style),
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${l10n.commentSpoiler} · ${l10n.commentSpoilerHint}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _RepliesToggle extends StatelessWidget {
@@ -267,8 +332,9 @@ class _ReplyItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  stripHtmlTags(reply.content),
+                _SpoilerContent(
+                  text: stripHtmlTags(reply.content),
+                  isSpoiler: reply.isSpoiler,
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 2),
@@ -281,18 +347,20 @@ class _ReplyItem extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Icon(
-                      Icons.thumb_up_outlined,
-                      size: 12,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      reply.likes,
-                      style: theme.textTheme.bodySmall?.copyWith(
+                    if (reply.likes != '0') ...[
+                      Icon(
+                        Icons.thumb_up_outlined,
+                        size: 12,
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      Text(
+                        reply.likes,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:jm_manga/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +8,6 @@ import '../models/album.dart';
 import '../models/reading_progress.dart';
 import '../models/reader_initial_data.dart';
 import '../widgets/animated_favorite_button.dart';
-import '../widgets/app_dropdown.dart';
 import '../widgets/comment_list.dart';
 import '../widgets/error_placeholder.dart';
 import '../widgets/loading_indicator.dart';
@@ -37,8 +35,8 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen>
   late final TabController _tabController;
   final _outerScrollController = ScrollController();
   final _chapterScrollController = ScrollController();
-  final List<GlobalKey> _chapterKeys = [];
-  int? _jumpTarget;
+  // 章节列表排序：默认正序，可切换倒序（最新话在前）。
+  bool _chapterAscending = true;
   bool _showScrollToTop = false;
 
   @override
@@ -114,19 +112,13 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen>
     );
   }
 
-  void _jumpToChapter(int index) {
-    setState(() => _jumpTarget = index);
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      final key = _chapterKeys[index];
-      final context = key.currentContext;
-      if (context != null) {
-        Scrollable.ensureVisible(
-          context,
-          duration: const Duration(milliseconds: 300),
-          alignment: 0.1,
-        );
+  void _toggleChapterSort() {
+    setState(() {
+      _chapterAscending = !_chapterAscending;
+      // 切换排序后回到列表顶部，避免停留在原偏移造成的错乱感。
+      if (_chapterScrollController.hasClients) {
+        _chapterScrollController.jumpTo(0);
       }
-      setState(() => _jumpTarget = null);
     });
   }
 
@@ -192,10 +184,6 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen>
           final progressList = progressAsync.valueOrNull ?? [];
           final repo = ref.read(apiRepositoryProvider);
           final coverUrl = album.coverUrl ?? repo.coverUrl(album.albumId);
-          final episodes = album.episodes;
-          _chapterKeys
-            ..clear()
-            ..addAll(List.generate(episodes.length, (_) => GlobalKey()));
 
           return NestedScrollView(
             controller: _outerScrollController,
@@ -351,10 +339,9 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen>
                 _ChaptersTab(
                   album: album,
                   progressList: progressList,
-                  chapterKeys: _chapterKeys,
-                  jumpTarget: _jumpTarget,
+                  ascending: _chapterAscending,
+                  onToggleSort: _toggleChapterSort,
                   scrollController: _chapterScrollController,
-                  onJump: _jumpToChapter,
                 ),
                 CommentListWidget(albumId: album.albumId),
               ],
@@ -457,18 +444,16 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen>
 class _ChaptersTab extends StatelessWidget {
   final AlbumDetail album;
   final List<ReadingProgress> progressList;
-  final List<GlobalKey> chapterKeys;
-  final int? jumpTarget;
+  final bool ascending;
+  final VoidCallback onToggleSort;
   final ScrollController scrollController;
-  final ValueChanged<int> onJump;
 
   const _ChaptersTab({
     required this.album,
     required this.progressList,
-    required this.chapterKeys,
-    this.jumpTarget,
+    required this.ascending,
+    required this.onToggleSort,
     required this.scrollController,
-    required this.onJump,
   });
 
   @override
@@ -476,6 +461,10 @@ class _ChaptersTab extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final episodes = album.episodes;
+    // 显示顺序：正序按原始章节号，倒序时最新话在前。
+    // 每条记录保留原始序号，用于章节标题与序号徽标。
+    final ordered = episodes.asMap().entries.toList();
+    final displayList = ascending ? ordered : ordered.reversed.toList();
 
     return CustomScrollView(
       controller: scrollController,
@@ -494,41 +483,17 @@ class _ChaptersTab extends StatelessWidget {
                   ),
                 ),
                 if (episodes.length > 1)
-                  AppDropdownMenu<int>(
-                    value: jumpTarget ?? 0,
-                    items: List.generate(episodes.length, (i) => i),
-                    width: 160,
-                    label: l10n.jumpToHint,
-                    requestFocusOnTap: true,
-                    labelFor: (index) => l10n.chapterTitle(index + 1),
-                    trailingIconFor: (index) {
-                      final photoId = _stringValue(episodes[index]['photo_id']);
-                      final progress = _findProgress(progressList, photoId);
-                      if (progress == null) {
-                        return Icon(
-                          Icons.circle_outlined,
-                          size: 16,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.4,
-                          ),
-                        );
-                      }
-                      if (progress.isFinished) {
-                        return Icon(
-                          Icons.check_circle,
-                          size: 16,
-                          color: theme.colorScheme.primary,
-                        );
-                      }
-                      return Icon(
-                        Icons.play_circle_outline,
-                        size: 16,
-                        color: theme.colorScheme.secondary,
-                      );
-                    },
-                    onSelected: (index) {
-                      if (index != null) onJump(index);
-                    },
+                  TextButton.icon(
+                    onPressed: onToggleSort,
+                    icon: Icon(
+                      ascending ? Icons.arrow_downward : Icons.arrow_upward,
+                      size: 18,
+                    ),
+                    label: Text(
+                      ascending
+                          ? l10n.chaptersSortAscending
+                          : l10n.chaptersSortDescending,
+                    ),
                   ),
               ],
             ),
@@ -537,12 +502,14 @@ class _ChaptersTab extends StatelessWidget {
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final ep = episodes[index];
+            delegate: SliverChildBuilderDelegate((context, displayIndex) {
+              final entry = displayList[displayIndex];
+              final chapterNumber = entry.key + 1;
+              final ep = entry.value;
               final photoId = _stringValue(ep['photo_id']);
               final title = _stringValue(ep['title']).isNotEmpty
                   ? _stringValue(ep['title'])
-                  : l10n.chapterTitle(index + 1);
+                  : l10n.chapterTitle(chapterNumber);
               final progress = _findProgress(progressList, photoId);
               final percent = _progressPercent(progress);
 
@@ -554,7 +521,6 @@ class _ChaptersTab extends StatelessWidget {
                   : theme.colorScheme.onSurfaceVariant;
 
               return Card(
-                key: chapterKeys[index],
                 margin: const EdgeInsets.only(bottom: 8),
                 clipBehavior: Clip.antiAlias,
                 child: Stack(
@@ -577,7 +543,7 @@ class _ChaptersTab extends StatelessWidget {
                       leading: CircleAvatar(
                         backgroundColor: theme.colorScheme.surfaceContainerHigh,
                         foregroundColor: theme.colorScheme.onSurfaceVariant,
-                        child: Text('${index + 1}'),
+                        child: Text('$chapterNumber'),
                       ),
                       title: Text(title),
                       trailing: Text(

@@ -218,6 +218,7 @@ class JmComment {
   final String likes;
   final String addTime;
   final String? photo;
+  final bool isSpoiler;
   final List<JmComment> replies;
 
   const JmComment({
@@ -230,6 +231,7 @@ class JmComment {
     required this.likes,
     required this.addTime,
     this.photo,
+    this.isSpoiler = false,
     this.replies = const [],
   });
 
@@ -252,6 +254,8 @@ class JmComment {
       likes: json['likes']?.toString() ?? '0',
       addTime: json['addtime']?.toString() ?? '',
       photo: isDefaultAvatar ? null : photo,
+      // 与 jmcomic 一致：spoiler == '2' 表示剧透评论。
+      isSpoiler: json['spoiler']?.toString() == '2',
       replies:
           (json['replys'] as List<dynamic>?)
               ?.whereType<Map>()
